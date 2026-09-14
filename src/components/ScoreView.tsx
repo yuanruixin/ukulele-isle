@@ -12,7 +12,7 @@ interface Props {
 /** 谱面视图：alphaTab 渲染 TAB 四线谱 + 播放光标/节拍高亮 */
 export default function ScoreView({ song, apiRef }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { setPlaying, setPlayerReady, speed, loop } = usePlayerStore();
+  const { setPlaying, setPlayerReady, speed, muted } = usePlayerStore();
 
   // 初始化 alphaTab（每首歌一次）
   useEffect(() => {
@@ -41,6 +41,18 @@ export default function ScoreView({ song, apiRef }: Props) {
         scale: siteConfig.player.scale,
         resources,
       },
+      notation: {
+        elements: {
+          // 页面头部已展示标题/艺术家，隐藏谱面内置信息块避免重复与挤压
+          scoreTitle: false,
+          scoreSubtitle: false,
+          scoreArtist: false,
+          scoreAlbum: false,
+          scoreWords: false,
+          scoreMusic: false,
+          scoreWordsAndMusic: false,
+        },
+      },
       player: {
         enablePlayer: true,
         soundFont: "/soundfont/sonivox.sf2",
@@ -48,7 +60,7 @@ export default function ScoreView({ song, apiRef }: Props) {
         enableAnimatedBeatCursor: siteConfig.player.beatHighlight,
         enableUserInteraction: true, // 点击谱面跳转播放位置
       },
-    } as alphaTab.json.SettingsJson);
+    } as unknown as alphaTab.json.SettingsJson);
     apiRef.current = api;
 
     api.playerReady.on(() => setPlayerReady(true));
@@ -78,13 +90,13 @@ export default function ScoreView({ song, apiRef }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [song.id, song.scoreTex]); // scoreTex 入依赖：HMR 热更新谱面内容时也能重渲染
 
-  // 速度 / 循环同步到播放器
+  // 速度 / 静音同步到播放器
   useEffect(() => {
     if (apiRef.current) apiRef.current.playbackSpeed = speed;
   }, [speed, apiRef]);
   useEffect(() => {
-    if (apiRef.current) apiRef.current.isLooping = loop;
-  }, [loop, apiRef]);
+    if (apiRef.current) apiRef.current.masterVolume = muted ? 0 : 1;
+  }, [muted, apiRef]);
 
   return (
     <div className="card overflow-x-auto p-4 sm:p-6">

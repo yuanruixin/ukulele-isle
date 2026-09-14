@@ -25,7 +25,7 @@
 
 - **Playback（演奏）**：由 alphaTab 内置 SoundFont 播放器驱动，音源即 **Score** 本身，不使用原曲音频。
 - **Beat Highlight（节拍高亮）**：演奏时高亮当前正在发声的节拍，与 **Playback** 天然同步。
-- **Practice Loop（循环练习）**：对选定小节区间循环演奏，配合调速用于练习。
+- **Mute（静音）**：播放控制条提供一键静音（masterVolume 0/1 切换）。
 
 ## 页面
 

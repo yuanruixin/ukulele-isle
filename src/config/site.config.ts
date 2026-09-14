@@ -14,8 +14,6 @@ export const siteConfig = {
     speedOptions: [0.5, 0.75, 1.0, 1.25, 1.5],
     /** ★ 默认是否开启节拍高亮 */
     beatHighlight: true,
-    /** ★ 默认是否开启循环练习（全曲循环） */
-    loop: false,
     /** ★ 谱面默认缩放 */
     scale: 1.0,
   },

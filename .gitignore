@@ -3,3 +3,10 @@ dist
 public/alphatab
 .DS_Store
 *.local
+
+temp
+TODOs.md
+*.log
+*.tsbuildinfo
+
+.workbuddy
