@@ -3,11 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 外观由 <html data-theme="light|dark"> 决定（令牌见 src/styles/globals.css），下面脚本会在首帧前写好 -->
     <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f5f5f7" />
     <!-- 站点图标只用 SVG 一份，不做 ico / png 派生版本 -->
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.ico" />
-    <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <script>
+      // ★ 首帧定外观：在样式生效前把 data-theme 写好，避免刷新时闪一下相反的底色。
+      // ⚠️ 键名与判定逻辑必须与 src/store/themeStore.ts 保持一致（键名对应 siteConfig.theme.storageKey）。
+      (function () {
+        try {
+          var saved = localStorage.getItem("yq-theme");
+          var mode =
+            saved === "light" || saved === "dark"
+              ? saved
+              : window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          document.documentElement.setAttribute("data-theme", mode);
+          if (mode === "dark") {
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute("content", "#000000");
+          }
+        } catch (e) {}
+      })();
+    </script>
     <title>屿琴 · 尤克里里学习</title>
   </head>
   <body>

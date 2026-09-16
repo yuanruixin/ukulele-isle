@@ -49,6 +49,17 @@ export const siteConfig = {
   /** 站点副标题 */
   tagline: "四根弦上的晴天",
 
+  /** ★ 外观（亮 / 暗模式） */
+  theme: {
+    /** ★ 首次访问的默认外观：'system' = 跟随系统；也可写死 'light' / 'dark'（之后一律以用户的选择为准） */
+    defaultMode: "system" as "light" | "dark" | "system",
+    /**
+     * ★ 记住用户选择所用的 localStorage 键名。
+     *   ⚠️ index.html 里的首帧脚本（防止刷新时闪一下相反底色）用的就是这个字符串，改名要一起改。
+     */
+    storageKey: "yq-theme",
+  },
+
   player: {
     /** ★ 默认播放速度（0.25 - 2.0） */
     defaultSpeed: 1.0,

@@ -2,7 +2,58 @@ import { useEffect, useRef } from "react";
 import * as alphaTab from "@coderline/alphatab";
 import { siteConfig } from "../config/site.config";
 import { usePlayerStore } from "../store/playerStore";
+import { useThemeStore } from "../store/themeStore";
 import type { Song } from "../types/song";
+
+type ScoreColors = Record<
+  | "staffLineColor"
+  | "barSeparatorColor"
+  | "mainGlyphColor"
+  | "secondaryGlyphColor"
+  | "scoreInfoColor"
+  | "barNumberColor",
+  string
+>;
+
+/**
+ * 谱面配色：跟随站点外观（alphaTab 是 canvas/svg 绘制，拿不到 CSS 变量，只能把色值喂给它）。
+ * ⚠️ 两套色值都要写全——alphaTab 的 resources 是可变对象，从深色切回浅色时若不显式覆盖，
+ *    深色的值会残留下来。
+ */
+const SCORE_COLORS: Record<"light" | "dark", ScoreColors> = {
+  light: {
+    // 亮色沿用 alphaTab 默认观感（黑谱面 + 红色小节号）
+    staffLineColor: "rgb(165, 165, 165)",
+    barSeparatorColor: "rgb(34, 34, 17)",
+    mainGlyphColor: "rgb(0, 0, 0)",
+    secondaryGlyphColor: "rgba(0, 0, 0, 0.4)",
+    scoreInfoColor: "rgb(0, 0, 0)",
+    barNumberColor: "rgb(200, 0, 0)",
+  },
+  dark: {
+    staffLineColor: "#98989d",
+    barSeparatorColor: "#636366",
+    mainGlyphColor: "#f5f5f7",
+    secondaryGlyphColor: "#98989d",
+    scoreInfoColor: "#f5f5f7",
+    barNumberColor: "#98989d",
+  },
+};
+
+/**
+ * 切换外观后更新谱面配色并重绘。
+ * 只改 settings 不重建实例——重建会卸载音色、打断正在进行的播放。
+ * ⚠️ alphaTab 的 Color 类型没有对外导出（`new Color()` / `Color.fromJson` 都拿不到），
+ *    所以颜色只能以字符串形式交给 Settings 自己解析；直接给 resources 字段赋字符串是不行的。
+ */
+function applyScoreTheme(api: alphaTab.AlphaTabApi, dark: boolean) {
+  const colors = SCORE_COLORS[dark ? "dark" : "light"];
+  (
+    api.settings as unknown as { fillFromJson: (json: unknown) => void }
+  ).fillFromJson({ display: { resources: colors } });
+  api.updateSettings();
+  if (api.score) api.render();
+}
 
 interface Props {
   song: Song;
@@ -14,23 +65,13 @@ export default function ScoreView({ song, apiRef }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { setPlaying, setPlayerReady, speed, muted } = usePlayerStore();
   const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const themeMode = useThemeStore((s) => s.mode);
 
-  // 初始化 alphaTab（每首歌一次）
+  // 初始化 alphaTab（每首歌一次；换外观不重建，见 applyScoreTheme）
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // 深色模式下谱面使用浅色系
-    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const resources = dark
-      ? {
-          staffLineColor: "#98989d",
-          barSeparatorColor: "#636366",
-          mainGlyphColor: "#f5f5f7",
-          secondaryGlyphColor: "#98989d",
-          scoreInfoColor: "#f5f5f7",
-          barNumberColor: "#98989d",
-        }
-      : {};
+    const dark = useThemeStore.getState().mode === "dark";
 
     // 官方推荐的 JSON 配置方式初始化
     const api = new alphaTab.AlphaTabApi(containerRef.current, {
@@ -46,7 +87,7 @@ export default function ScoreView({ song, apiRef }: Props) {
         layoutMode: siteConfig.player.equalBarWidth ? "parchment" : "page",
         // Page 布局下固定每行小节数（Parchment 模式忽略此项）
         barsPerRow: siteConfig.player.barsPerRow,
-        resources,
+        resources: SCORE_COLORS[dark ? "dark" : "light"],
       },
       notation: {
         elements: {
@@ -115,6 +156,11 @@ export default function ScoreView({ song, apiRef }: Props) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [song.id, song.scoreTex]); // scoreTex 入依赖：HMR 热更新谱面内容时也能重渲染
+
+  // 外观切换：只更新谱面配色并重绘（初始化时已写入一套，这里重复一次是幂等的）
+  useEffect(() => {
+    if (apiRef.current) applyScoreTheme(apiRef.current, themeMode === "dark");
+  }, [themeMode, apiRef]);
 
   // 速度 / 静音同步到播放器
   useEffect(() => {

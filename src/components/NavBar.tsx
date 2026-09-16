@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { siteConfig } from "../config/site.config";
+import ThemeSwitch from "./ThemeSwitch";
 
 /** 曲谱入口在歌曲详情页（/song/:id）下也算激活态 */
 function useActive(to: string): boolean {
@@ -9,7 +10,18 @@ function useActive(to: string): boolean {
   return pathname === to || pathname.startsWith(to + "/");
 }
 
-function NavItem({ to, label, stacked }: { to: string; label: string; stacked?: boolean }) {
+function NavItem({
+  to,
+  label,
+  stacked,
+  last,
+}: {
+  to: string;
+  label: string;
+  stacked?: boolean;
+  /** 移动端菜单里的最后一项：不画下分隔线 */
+  last?: boolean;
+}) {
   const active = useActive(to);
   return (
     <Link
@@ -17,7 +29,7 @@ function NavItem({ to, label, stacked }: { to: string; label: string; stacked?: 
       aria-current={active ? "page" : undefined}
       className={
         stacked
-          ? "mobile-nav-item block px-2 py-4 text-lg font-medium"
+          ? `mobile-nav-item block px-2 py-4 text-lg font-medium${last ? " is-last" : ""}`
           : "rounded-full px-3.5 py-1.5 text-sm transition-colors"
       }
       style={{
@@ -59,11 +71,17 @@ export default function NavBar() {
             </span>
           </Link>
 
-          {/* 桌面端：入口平铺在右侧 */}
+          {/* 桌面端：入口平铺在右侧，末尾是外观开关（竖线分隔导航与开关） */}
           <nav className="hidden items-center gap-1 sm:flex">
             {siteConfig.nav.map((item) => (
               <NavItem key={item.to} to={item.to} label={item.label} />
             ))}
+            <span
+              className="mx-2 h-4 w-px"
+              style={{ background: "var(--tick)" }}
+              aria-hidden="true"
+            />
+            <ThemeSwitch />
           </nav>
 
           {/* 移动端：右上角汉堡按钮，点击后三条横线变为叉号 */}
@@ -97,9 +115,26 @@ export default function NavBar() {
                 className="mobile-menu-item"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
-                <NavItem to={item.to} label={item.label} stacked />
+                <NavItem
+                  to={item.to}
+                  label={item.label}
+                  stacked
+                  last={i === siteConfig.nav.length - 1}
+                />
               </div>
             ))}
+
+            {/* 外观：与上方导航入口不同的独立区块——卡片里一行「外观 + 开关」，
+                不跳转任何页面，所以做成卡片而不是列表项 */}
+            <div
+              className="mobile-theme-card mt-8 flex items-center justify-between px-4 py-3.5"
+              style={{ animationDelay: `${siteConfig.nav.length * 60}ms` }}
+            >
+              <span className="text-[15px]" style={{ color: "var(--text-secondary)" }}>
+                外观
+              </span>
+              <ThemeSwitch label="切换外观" />
+            </div>
           </div>
         </nav>
       )}

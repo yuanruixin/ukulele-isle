@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-/* ★ Apple HIG 设计令牌：浅色/深色跟随系统 ★ */
+/* ★ Apple HIG 设计令牌：外观由 <html data-theme="light|dark"> 决定（首帧脚本见 index.html，
+   状态与切换逻辑见 src/store/themeStore.ts）。首次进入默认跟随系统，切换后记住用户的选择。 */
 :root {
   --bg: #f5f5f7;
   --bg-elevated: rgba(255, 255, 255, 0.72);
@@ -14,28 +15,41 @@
   --tick: rgba(0, 0, 0, 0.18);
   /* iOS 风格开关的关闭态轨道 */
   --switch-off: rgba(120, 120, 128, 0.16);
+  /* 外观开关（ThemeSwitch）：浅色下是「浅灰轨道 + 白色浮起滑块」，深色下整体压暗、
+     滑块比轨道略亮一圈——两端都不做黑白反色 */
+  --toggle-track: #ececed;
+  --toggle-track-hover: #e3e3e5;
+  --toggle-track-ring: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --toggle-knob: #ffffff;
+  --toggle-knob-shadow: 0 1px 3px rgba(0, 0, 0, 0.16), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --toggle-icon: #3a3a3c;
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
   --shadow-card-hover: 0 8px 28px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #000000;
-    --bg-elevated: rgba(28, 28, 30, 0.72);
-    --card: #1c1c1e;
-    --text: #f5f5f7;
-    --text-secondary: #98989d;
-    --accent: #0a84ff;
-    --accent-pressed: #409cff;
-    --border: rgba(255, 255, 255, 0.12);
-    --tick: rgba(255, 255, 255, 0.22);
-    --switch-off: rgba(120, 120, 128, 0.32);
-    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
-    --shadow-card-hover: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.12);
-    color-scheme: dark;
-  }
+:root[data-theme="dark"] {
+  --bg: #000000;
+  --bg-elevated: rgba(28, 28, 30, 0.72);
+  --card: #1c1c1e;
+  --text: #f5f5f7;
+  --text-secondary: #98989d;
+  --accent: #0a84ff;
+  --accent-pressed: #409cff;
+  --border: rgba(255, 255, 255, 0.12);
+  --tick: rgba(255, 255, 255, 0.22);
+  --switch-off: rgba(120, 120, 128, 0.32);
+  --toggle-track: #2c2c2e;
+  --toggle-track-hover: #333335;
+  --toggle-track-ring: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --toggle-knob: #3a3a3c;
+  --toggle-knob-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 1px 3px rgba(0, 0, 0, 0.5);
+  --toggle-icon: #ffffff;
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+  --shadow-card-hover: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+  color-scheme: dark;
 }
+
 
 html,
 body {
@@ -118,7 +132,8 @@ body {
   border-bottom: 0.5px solid var(--border);
 }
 
-.mobile-menu-item:last-child .mobile-nav-item {
+/* 最后一条导航项不再画分隔线（下方接的是「外观」区块，靠留白区分） */
+.mobile-nav-item.is-last {
   border-bottom: none;
 }
 
@@ -140,6 +155,58 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ★ 外观开关（ThemeSwitch）★ */
+/* 轨道 46×26，滑块 20（四周各留 3px，行程 20px），滑块里同一时刻只显示一个图标。
+   轨道不画实边框——轮廓用 inset 阴影表达，这样滑块能按整数像素对齐；
+   颜色见上方 --toggle-* 令牌。注意：定位/尺寸以外的布局属性（如 position）写在元素的 Tailwind 类里 */
+.theme-switch {
+  width: 46px;
+  height: 26px;
+  border-radius: 9999px;
+  background: var(--toggle-track);
+  box-shadow: var(--toggle-track-ring);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s ease;
+}
+
+.theme-switch:hover {
+  background: var(--toggle-track-hover);
+}
+
+.theme-switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 滑块：浅色下是浮起的白圆（靠投影立起来），深色下比轨道亮一档并带一圈内描边 */
+.theme-switch-knob {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--toggle-knob);
+  color: var(--toggle-icon);
+  box-shadow: var(--toggle-knob-shadow);
+  transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 滑块内的图标：太阳与月亮叠在滑块正中，按当前模式交叉旋转淡入淡出 */
+.theme-switch-icon {
+  inset: 0;
+  display: grid;
+  place-items: center;
+  line-height: 0;
+  transition: opacity 0.24s ease, transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ★ 移动端菜单里的「外观」区块：卡片形式，和上方的大字导航入口区分开 */
+.mobile-theme-card {
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  animation: menu-item-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* 分段控件（速度选择） */
