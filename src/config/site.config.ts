@@ -80,6 +80,13 @@ export const siteConfig = {
     rangeCents: 50,
     /** ★ 默认选中的弦 id；null = 进入页面不预选任何弦（按钮均不高亮，与参考设计一致） */
     defaultStringId: null as string | null,
+    /** ★ 进入页面时是否默认开启「自动识别」（弹哪根自动认哪根） */
+    defaultAuto: false,
+    /**
+     * ★ 是否显示「信号诊断」面板（采集链路调试用，平时不显示）。
+     *   除了这里改成 true，也可以在地址栏临时打开：/#/tools/tuner?debug=1
+     */
+    debug: false,
     /**
      * ★ 标准调弦 GCEA（数组顺序 = 按钮在琴头同侧的上下顺序；
      *   改 freq 即可切换 Low-G / 男声调弦等）

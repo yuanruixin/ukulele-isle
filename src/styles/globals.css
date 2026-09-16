@@ -12,6 +12,8 @@
   --border: rgba(0, 0, 0, 0.08);
   /* 调音器刻度线：比 border 稍深一些，浅色底上才看得清 */
   --tick: rgba(0, 0, 0, 0.18);
+  /* iOS 风格开关的关闭态轨道 */
+  --switch-off: rgba(120, 120, 128, 0.16);
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
   --shadow-card-hover: 0 8px 28px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
   color-scheme: light;
@@ -28,6 +30,7 @@
     --accent-pressed: #409cff;
     --border: rgba(255, 255, 255, 0.12);
     --tick: rgba(255, 255, 255, 0.22);
+    --switch-off: rgba(120, 120, 128, 0.32);
     --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
     --shadow-card-hover: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.12);
     color-scheme: dark;
@@ -177,6 +180,30 @@ body {
   50% {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+/* 调音器：自动识别锁定的那根弦——向外扩散的呼吸圈 */
+.halo-ring {
+  inset: -4px;
+  border-radius: 9999px;
+  border-width: 1.5px;
+  border-style: solid;
+  animation: halo-ring 1.8s ease-out infinite;
+}
+
+@keyframes halo-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.75;
+  }
+  70% {
+    transform: scale(1.14);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.14);
+    opacity: 0;
   }
 }
 

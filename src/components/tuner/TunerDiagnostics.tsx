@@ -76,7 +76,7 @@ export default function TunerDiagnostics({
   );
 
   return (
-    <section className="card px-3.5 py-2.5 text-[11px] leading-[1.5]">
+    <section className="card px-3.5 py-2 text-[11px] leading-[1.5]">
       <div className="mb-1 flex items-center justify-between">
         <span className="font-semibold">信号诊断</span>
         <span className="text-secondary">{STATUS_TEXT[status]}</span>
@@ -170,13 +170,13 @@ export default function TunerDiagnostics({
       {/* 判定 */}
       <p className="mt-1.5 font-medium break-words">{telemetry.verdict}</p>
 
-      {/* 日志 */}
+      {/* 日志：最近几次判定（最新在上） */}
       <div
-        className="mt-1.5 border-t pt-1"
+        className="mt-1 border-t pt-0.5"
         style={{ borderColor: "var(--border)" }}
+        aria-label="判定日志"
       >
-        <div className="text-secondary mb-0.5">日志</div>
-        <div className="max-h-[46px] space-y-0.5 overflow-hidden font-mono text-[10px] leading-[1.45]">
+        <div className="max-h-[32px] space-y-0.5 overflow-hidden font-mono text-[10px] leading-[1.45]">
           {log.length === 0 ? (
             <div className="text-secondary">—</div>
           ) : (

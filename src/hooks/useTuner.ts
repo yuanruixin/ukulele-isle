@@ -14,8 +14,9 @@ export interface TunerReading {
   freq: number;
   /**
    * 音分偏差：
-   * - 已选弦 → 相对目标弦（八度折叠后）的偏差
-   * - 未选弦 → 相对最近十二平均律音高的偏差
+   * - 手动选弦 → 相对所选弦（八度折叠后）的偏差
+   * - 自动模式 → 相对自动识别出的那根弦（八度折叠后）的偏差
+   * - 两者皆无 → 相对最近十二平均律音高的偏差
    */
   cents: number;
   /** 实测音名 */
@@ -66,8 +67,12 @@ export function isVirtualInput(label: string | undefined | null): boolean {
 }
 
 interface Options {
-  /** 目标弦频率；null = 未选弦，只报告听到的音准 */
+  /** 手动选定的弦频率；null = 未选弦 */
   targetFreq: number | null;
+  /** 自动模式的候选弦（自动识别时从中挑最近的） */
+  candidates?: { id: string; freq: number }[];
+  /** 是否开启自动识别 */
+  auto?: boolean;
   /** 音准容差（cent） */
   toleranceCents: number;
   /** 置信度门限 */
@@ -92,6 +97,14 @@ const STABLE_WINDOW = 5;
 const STABLE_RATIO = 1.03;
 /** 单帧置信度高于该值就直接采信，不必等窗口 */
 const TRUST_CLARITY = 0.55;
+/**
+ * 自动识别：与某根弦的偏差在该范围内才算「像是这根弦」。
+ * 相邻弦相距 200 音分（G→A），所以 ±100 正好铺满、且不重叠；
+ * 取 60 的话弦偏离半音以上就完全认不出来，调音时很别扭。
+ */
+const AUTO_MATCH_CENTS = 100;
+/** 自动识别：连续多少帧指向同一根弦才切换，避免来回跳 */
+const AUTO_MATCH_FRAMES = 3;
 
 function stamp(): string {
   const d = new Date();
@@ -105,6 +118,8 @@ function stamp(): string {
  */
 export function useTuner({
   targetFreq,
+  candidates = [],
+  auto = false,
   toleranceCents,
   minClarity = 0.25,
   intervalMs = 60,
@@ -113,6 +128,8 @@ export function useTuner({
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState<TunerReading | null>(null);
   const [mismatch, setMismatch] = useState<NoteInfo | null>(null);
+  /** 自动识别出来的弦 id（自动模式关闭时为 null） */
+  const [autoStringId, setAutoStringId] = useState<string | null>(null);
   const [level, setLevel] = useState(0);
   const [device, setDevice] = useState<TunerDevice | null>(null);
   const [log, setLog] = useState<string[]>([]);
@@ -157,6 +174,18 @@ export function useTuner({
   }, [status]);
   /** start 的 ref：自动切换设备后需要重新启动采集 */
   const startRef = useRef<() => void>(() => {});
+  /** 自动模式识别出的当前弦（ref 供 loop 读取） */
+  const autoTargetRef = useRef<{ id: string; freq: number } | null>(null);
+  /** 自动识别的候选计数：连续若干帧指向同一根弦才切换 */
+  const autoCandidateRef = useRef<{ id: string | null; count: number }>({
+    id: null,
+    count: 0,
+  });
+  /** 自动识别：连续贴不上任何候选弦的帧数，超过阈值就释放锁定 */
+  const autoMissRef = useRef(0);
+  /** auto / candidates 的 ref 镜像，供 loop 闭包读取最新值 */
+  const autoRef = useRef(auto);
+  const candidatesRef = useRef(candidates);
 
   /** 列出可用输入设备（未授权时 label 为空，只能显示占位名） */
   const refreshDevices = useCallback(async (): Promise<MediaDeviceInfo[]> => {
@@ -225,6 +254,23 @@ export function useTuner({
     setMismatch(null);
   }, [targetFreq]);
 
+  // 同步给 loop 闭包使用
+  useEffect(() => {
+    autoRef.current = auto;
+    candidatesRef.current = candidates;
+  }, [auto, candidates]);
+
+  // 开关自动模式时重置识别状态：每次开启都从「未选弦」开始重新识别
+  useEffect(() => {
+    autoTargetRef.current = null;
+    autoCandidateRef.current = { id: null, count: 0 };
+    autoMissRef.current = 0;
+    historyRef.current = [];
+    setAutoStringId(null);
+    setReading(null);
+    setMismatch(null);
+  }, [auto]);
+
   const stop = useCallback(() => {
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
@@ -244,6 +290,10 @@ export function useTuner({
     mismatchKeyRef.current = null;
     framesRef.current = 0;
     adoptedRef.current = 0;
+    autoTargetRef.current = null;
+    autoCandidateRef.current = { id: null, count: 0 };
+    autoMissRef.current = 0;
+    setAutoStringId(null);
     setLevel(0);
     setReading(null);
     setMismatch(null);
@@ -411,11 +461,73 @@ export function useTuner({
           const info = freqToNote(result.freq);
           let cents: number | null = null;
 
-          if (target === null) {
+          // ── 自动模式：先从候选弦里挑最接近的一根 ──────────────────────
+          // 连中 AUTO_MATCH_FRAMES 帧才真正切弦（防抖）；锁定前不出读数，
+          // 这样扫弦 / 泛音造成的瞬时误判不会让指针乱跳。
+          const isAuto = autoRef.current && candidatesRef.current.length > 0;
+          let effTarget = target;
+          if (isAuto) {
+            let best: { id: string; freq: number } | null = null;
+            let bestAbs = Infinity;
+            for (const cand of candidatesRef.current) {
+              const c = Math.abs(
+                centsBetween(foldToTarget(result.freq, cand.freq), cand.freq),
+              );
+              if (c < bestAbs) {
+                bestAbs = c;
+                best = cand;
+              }
+            }
+
+            const lock = autoCandidateRef.current;
+            if (best && bestAbs <= AUTO_MATCH_CENTS) {
+              autoMissRef.current = 0;
+              if (lock.id === best.id) lock.count += 1;
+              else {
+                lock.id = best.id;
+                lock.count = 1;
+              }
+              if (
+                lock.count >= AUTO_MATCH_FRAMES &&
+                autoTargetRef.current?.id !== best.id
+              ) {
+                autoTargetRef.current = { id: best.id, freq: best.freq };
+                setAutoStringId(best.id);
+                // 换了目标弦，之前的音分中位数是相对旧弦的，作废
+                historyRef.current = [];
+                mismatchKeyRef.current = null;
+                setMismatch(null);
+              }
+            } else {
+              lock.id = null;
+              lock.count = 0;
+              // 听清了一个明显不属于任何一根弦的音（比如按错了品），
+              // 连续若干帧都贴不上任何候选弦就释放锁定，免得拿旧弦硬比。
+              autoMissRef.current += 1;
+              if (
+                autoMissRef.current >= AUTO_MATCH_FRAMES &&
+                autoTargetRef.current !== null
+              ) {
+                autoTargetRef.current = null;
+                setAutoStringId(null);
+                historyRef.current = [];
+                setReading(null);
+              }
+            }
+
+            effTarget = autoTargetRef.current?.freq ?? null;
+            if (effTarget === null) {
+              // 还没锁定（或听清的音夹在两根弦中间）→ 下面退化成十二平均律读数，
+              // 界面上不点亮任何弦，让用户知道「我听见了，但不属于某一根」。
+              verdict = `还没锁定弦位 · 听见 ${info.name}${info.octave}（最近差 ${Math.round(bestAbs)} 音分）`;
+            }
+          }
+
+          if (effTarget === null) {
             cents = info.cents;
           } else {
-            const folded = foldToTarget(result.freq, target);
-            const c = centsBetween(folded, target);
+            const folded = foldToTarget(result.freq, effTarget);
+            const c = centsBetween(folded, effTarget);
             if (Math.abs(c) <= MAX_DRIFT) {
               cents = c;
               if (mismatchKeyRef.current !== null) {
@@ -423,12 +535,18 @@ export function useTuner({
                 setMismatch(null);
               }
             } else {
-              const key = `${info.name}${info.octave}`;
-              if (mismatchKeyRef.current !== key) {
-                mismatchKeyRef.current = key;
-                setMismatch(info);
+              // 自动模式下偏到别的音上时，锁定会在几帧内自动释放，
+              // 这里不打「不是这根弦」的提示，免得闪一下误导用户。
+              if (!isAuto) {
+                const key = `${info.name}${info.octave}`;
+                if (mismatchKeyRef.current !== key) {
+                  mismatchKeyRef.current = key;
+                  setMismatch(info);
+                }
               }
-              verdict = `偏差过大（${Math.round(c)} 音分）→ 判为 ${info.name}${info.octave}，不是这根弦`;
+              verdict = `偏差过大（${Math.round(c)} 音分）→ 判为 ${info.name}${info.octave}${
+                isAuto ? "，正在重新识别弦位" : "，不是这根弦"
+              }`;
             }
           }
 
@@ -474,7 +592,11 @@ export function useTuner({
 
         const sorted = [...historyRef.current].sort((a, b) => a - b);
         const smoothed = sorted[sorted.length >> 1];
-        const f = lastFreqRef.current ?? target ?? 440;
+        const f =
+          lastFreqRef.current ??
+          autoTargetRef.current?.freq ??
+          target ??
+          440;
 
         setReading({
           freq: f,
@@ -531,6 +653,8 @@ export function useTuner({
     error,
     reading,
     mismatch,
+    /** 自动模式识别出的弦 id（未开启自动 / 尚未锁定时为 null） */
+    autoStringId,
     level,
     device,
     permission,
