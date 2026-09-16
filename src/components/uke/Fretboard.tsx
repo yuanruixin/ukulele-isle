@@ -489,34 +489,41 @@ export default function Fretboard({
           }),
         )}
 
-        {/* 按弦点：空弦画 ○，按品画实心点（表示手指掐在这里） */}
-        {strings.map((_, i) => {
-          const f = held[i];
-          if (f === null || f === undefined) return null;
-          const x = f === 0 ? (geom.openLeft + geom.nutX) / 2 : geom.fretLines[f - 1];
-          const cy = geom.rowY[i];
-          return f === 0 ? (
-            <circle
-              key={`hold${i}`}
-              cx={x}
-              cy={cy}
-              r={5}
-              fill="var(--card)"
-              stroke="var(--accent)"
-              strokeWidth={2}
-            />
-          ) : (
-            <circle
-              key={`hold${i}`}
-              cx={x}
-              cy={cy}
-              r={7.5}
-              fill="var(--accent)"
-              stroke="var(--card)"
-              strokeWidth={2}
-            />
-          );
-        })}
+        {/* 按弦点：空弦画 ○，按品画实心点（表示手指掐在这里）。
+            ⚠️ 整组必须 pointer-events: none —— 这一组画在上面的格子 rect **之后**，
+            所以压在格子上层：空弦的 ○ 正好落在空弦格**正中央**，按品的实心点压在
+            格子**左缘**。不关掉指针命中，按住这根弦之后再点同一处就会打在标记上，
+            事件到不了下面的格子 rect，表现为「点了不响」（格子是 transparent 填充，
+            本来能吃满整格，就是被这两枚标记挡掉的）。 */}
+        <g pointerEvents="none">
+          {strings.map((_, i) => {
+            const f = held[i];
+            if (f === null || f === undefined) return null;
+            const x = f === 0 ? (geom.openLeft + geom.nutX) / 2 : geom.fretLines[f - 1];
+            const cy = geom.rowY[i];
+            return f === 0 ? (
+              <circle
+                key={`hold${i}`}
+                cx={x}
+                cy={cy}
+                r={5}
+                fill="var(--card)"
+                stroke="var(--accent)"
+                strokeWidth={2}
+              />
+            ) : (
+              <circle
+                key={`hold${i}`}
+                cx={x}
+                cy={cy}
+                r={7.5}
+                fill="var(--accent)"
+                stroke="var(--card)"
+                strokeWidth={2}
+              />
+            );
+          })}
+        </g>
 
         {/* 拨弦反馈：一圈扩散出去（按 key 重放动画） */}
         {pluck && (
