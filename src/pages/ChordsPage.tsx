@@ -12,7 +12,7 @@ import ChordCard from "../components/chords/ChordCard";
  * 所以首屏只有指法图，4MB 左右的音色是在后台空闲时才去取的。
  */
 export default function ChordsPage() {
-  const { items, volume, strumSpreadMs, ringSeconds, tuning } =
+  const { items, volume, strumSpreadMs, ringSeconds, tuning, instrument, fx } =
     siteConfig.chords;
 
   const { status, error, activeName, play } = useChordPlayer({
@@ -21,6 +21,8 @@ export default function ChordsPage() {
     strumSpreadMs,
     ringSeconds,
     volume,
+    instrument,
+    fx,
   });
 
   /** 图上的点亮节奏 = 实际扫弦每根弦的间隔，两边用同一组数字 */

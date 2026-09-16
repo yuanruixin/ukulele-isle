@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type * as alphaTabNs from "@coderline/alphatab";
 import type { ChordConfig } from "../config/site.config";
 import { chordTex } from "../lib/chord";
+import type { SynthFxOptions } from "../lib/synthFx";
+import { useSynthFx } from "./useSynthFx";
 
 /**
  * 和弦试听。
@@ -16,6 +18,13 @@ import { chordTex } from "../lib/chord";
  *
  * 播放靠「重试到播放器就绪」而不是「等固定时长」：alphaTab 换谱后要重新生成 MIDI，
  * 这期间 play() 会直接返回 false，猜时间不如看返回值。
+ *
+ * 音色分两层，都在 ★ `siteConfig.chords` 里调（与虚拟尤克里里同一套路子）：
+ * - `instrument`：GM 音色号。不指定的话 alphaTab 默认 **25 = 钢弦吉他**（金属弦），
+ *   而尤克里里是尼龙弦，所以统一取 24 尼龙吉他（见站点顶部的 `SITE_INSTRUMENT`）。
+ * - `fx`：合成器本身**没有任何效果**、音色库也注明 no reverb，所以额外挂一条
+ *   低通 + 混响支路（见 `lib/synthFx.ts`）。有没有、什么味道都由 ★ `siteConfig.chords.fx`
+ *   决定，**页面上没有开关**；`enabled: false` 就整条链都不挂。
  */
 
 /** 换谱后重试起播的间隔与次数上限（实测换谱到可播约需 150ms 左右） */
@@ -30,6 +39,10 @@ interface Options {
   strumSpreadMs: number;
   ringSeconds: number;
   volume: number;
+  /** 试听音色（GM 音色号，0 基）。不写的话 alphaTab 默认 25 钢弦吉他，尤克里里会偏尖 */
+  instrument: number;
+  /** 输出效果链（低通 + 混响） */
+  fx: SynthFxOptions;
 }
 
 export function useChordPlayer({
@@ -38,19 +51,23 @@ export function useChordPlayer({
   strumSpreadMs,
   ringSeconds,
   volume,
+  instrument,
+  fx: fxOptions,
 }: Options) {
   const [status, setStatus] = useState<ChordPlayerStatus>("preparing");
   const [error, setError] = useState<string | null>(null);
   /** 最近一次点了哪个和弦（视觉上保持点亮，不随余音衰减消失） */
   const [activeName, setActiveName] = useState<string | null>(null);
+  /** 输出效果链：接线在通用 hook 里；挂不挂由配置的 `fx.enabled` 决定 */
+  const fx = useSynthFx(fxOptions);
 
   const apiRef = useRef<alphaTabNs.AlphaTabApi | null>(null);
   const pendingRef = useRef<string | null>(null);
   const retryRef = useRef<number | null>(null);
   const aliveRef = useRef(true);
   /** 播放参数放进 ref，避免把 init 的 effect 拖进依赖数组反复重建 */
-  const playOptionsRef = useRef({ strumSpreadMs, ringSeconds, tuning });
-  playOptionsRef.current = { strumSpreadMs, ringSeconds, tuning };
+  const playOptionsRef = useRef({ strumSpreadMs, ringSeconds, tuning, instrument });
+  playOptionsRef.current = { strumSpreadMs, ringSeconds, tuning, instrument };
   const chordsRef = useRef(chords);
   chordsRef.current = chords;
 
@@ -144,9 +161,18 @@ export function useChordPlayer({
         const first = chordsRef.current[0];
         if (first) api.tex(chordTex(first, playOptionsRef.current));
 
+        // 效果链要等播放器建好才能拿到输出节点；构造完与 playerReady 两处都试一次
+        // （attach 自己会去重，重复调没有副作用）
+        const attachFx = () => {
+          if (cancelled) return;
+          fx.attach(api);
+        };
+        attachFx();
+
         // playerReady 自带就绪检查，注册时会立刻回调，不存在错过事件的问题
         api.playerReady.on(() => {
           if (cancelled) return;
+          attachFx();
           setStatus("ready");
           const pending = pendingRef.current;
           if (pending) {
@@ -183,6 +209,7 @@ export function useChordPlayer({
       clearRetry();
       if (idleId !== undefined) window.cancelIdleCallback(idleId);
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      fx.detach();
       apiRef.current?.destroy();
       apiRef.current = null;
       host.remove();

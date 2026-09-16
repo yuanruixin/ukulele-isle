@@ -51,6 +51,8 @@ function useIsNarrow() {
 export default function UkulelePage() {
   const {
     volume,
+    instrument,
+    fx,
     frets,
     fretsMobile,
     rowGap,
@@ -81,8 +83,10 @@ export default function UkulelePage() {
     frets,
     stringCount: strings.length,
     tuning,
+    instrument,
     ringSeconds,
     volume,
+    fx,
   });
 
   /** 每根弦当前按住的位置（null = 还没弹过，不画按弦点） */
@@ -188,28 +192,28 @@ export default function UkulelePage() {
       style={narrow ? { height: `calc(100dvh - ${navH}px)` } : undefined}
     >
       <header
-        className={
-          narrow ? "shrink-0 pb-2 pt-3 text-center" : "py-7 text-center sm:py-9"
-        }
+        className={narrow ? "shrink-0 pt-3 pb-2" : "py-7 sm:py-9"}
       >
-        <h1
-          className={
-            narrow
-              ? "text-lg font-semibold tracking-tight"
-              : "text-2xl font-semibold tracking-tight sm:text-3xl"
-          }
-        >
-          虚拟尤克里里
-        </h1>
-        <p
-          className={
-            narrow
-              ? "text-secondary mt-0.5 text-[11px]"
-              : "text-secondary mt-1 text-xs sm:text-sm"
-          }
-        >
-          {siteConfig.tuner.instrument} · 标准调弦 GCEA
-        </p>
+        <div className="text-center">
+          <h1
+            className={
+              narrow
+                ? "text-lg font-semibold tracking-tight"
+                : "text-2xl font-semibold tracking-tight sm:text-3xl"
+            }
+          >
+            虚拟尤克里里
+          </h1>
+          <p
+            className={
+              narrow
+                ? "text-secondary mt-0.5 text-[11px]"
+                : "text-secondary mt-1 text-xs sm:text-sm"
+            }
+          >
+            {siteConfig.tuner.instrument} · 标准调弦 GCEA
+          </p>
+        </div>
       </header>
 
       <section

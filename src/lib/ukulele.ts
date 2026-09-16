@@ -61,6 +61,12 @@ export function noteLabel(note: UkeNote): string {
 export interface BoardTexOptions {
   /** 调弦（alphaTex 写法，高音弦在前） */
   tuning: string;
+  /**
+   * 试听音色（General MIDI 音色号，0 基）。
+   * 不写的话 alphaTab 给的是 25 = 钢弦吉他，而尤克里里是尼龙弦——声音会明显偏尖。
+   * 取值见 ★ `siteConfig.uke.instrument`。
+   */
+  instrument: number;
   /** 余音时长（秒） */
   ringSeconds: number;
   /** 指板到第几品 */
@@ -82,9 +88,13 @@ export interface BoardTexOptions {
  *
  * `\tempo` 由 ringSeconds 反推（同一个全音符撑满一小节），与和弦库的算法一致——
  * 于是**听到的余音时长 = 弦晃动的衰减时长**。
+ *
+ * 音色（`\instrument`）也在这里指定：alphaTab 不给就默认用 **25 = 钢弦吉他**，
+ * 而尤克里里是尼龙弦，用钢弦音色会明显偏尖（见 ★ `siteConfig.uke.instrument`）。
  */
 export function boardTex({
   tuning,
+  instrument,
   ringSeconds,
   frets,
   stringCount,
@@ -98,6 +108,9 @@ export function boardTex({
   return [
     `\\tempo ${tempo}`,
     ".",
+    // 音色写在「进入 track 之后、\tuning 之前」这一段里才生效（1.8.4 实测：
+    // 放在 \tempo 前面不行、放在小节之间也不行）
+    `\\instrument ${instrument}`,
     `\\tuning ${tuning}`,
     "\\ts 4 4",
     "",

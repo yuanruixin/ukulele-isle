@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type * as alphaTabNs from "@coderline/alphatab";
 import { boardTex, stringIndexFromNote } from "../lib/ukulele";
+import type { SynthFxOptions } from "../lib/synthFx";
+import { useSynthFx } from "./useSynthFx";
 
 /**
  * 虚拟尤克里里的发声层：点指板 → 出声。
@@ -14,6 +16,15 @@ import { boardTex, stringIndexFromNote } from "../lib/ukulele";
  * 代价（已知并接受）：`playOneTimeMidiFile` 会打断正在响的上一个一次性音，
  * 所以这里是**单音**乐器——同一个音域里后一个音会掐掉前一个音（余音不叠加）。
  * 想要和弦叠加请用和弦库；这一页要的是「点哪响哪」的手感。
+ *
+ * 音色分两层，都在 ★ `siteConfig.uke` 里调：
+ * - `instrument`：GM 音色号。不指定的话 alphaTab 默认 **25 = 钢弦吉他**，
+ *   而尤克里里是尼龙弦，钢弦音色会明显偏尖，所以默认换成 24 尼龙吉他。
+ * - `fx`：alphaTab 的合成器本身**没有任何效果**，音色库也注明 no reverb，
+ *   于是声音干、贴耳。这里额外挂一条低通 + 混响支路（见 `lib/synthFx.ts`）。
+ *
+ * 效果链有没有、什么味道，**全部由 ★ `siteConfig.uke.fx` 那块配置决定，页面上没有开关**：
+ * `enabled: false` 时整条链都不挂（音频路径上不留痕迹）。改完刷新页面生效。
  */
 
 export type UkePlayerStatus = "preparing" | "ready" | "error";
@@ -23,19 +34,27 @@ interface Options {
   frets: number;
   stringCount: number;
   tuning: string;
+  /** 试听音色（GM 音色号，0 基） */
+  instrument: number;
   ringSeconds: number;
   volume: number;
+  /** 输出效果链（低通 + 混响） */
+  fx: SynthFxOptions;
 }
 
 export function useUkulelePlayer({
   frets,
   stringCount,
   tuning,
+  instrument,
   ringSeconds,
   volume,
+  fx: fxOptions,
 }: Options) {
   const [status, setStatus] = useState<UkePlayerStatus>("preparing");
   const [error, setError] = useState<string | null>(null);
+  /** 输出效果链（低通 + 混响）：接线在通用 hook 里；挂不挂由配置的 `fx.enabled` 决定 */
+  const fx = useSynthFx(fxOptions);
 
   const apiRef = useRef<alphaTabNs.AlphaTabApi | null>(null);
   /** `${弦下标}:${品}` → alphaTab 的 Note，按弦下标（0 = 1 弦 A）编号 */
@@ -88,6 +107,14 @@ export function useUkulelePlayer({
 
         api.masterVolume = volume;
 
+        // 效果链挂在「已经建好的播放器」上。AlphaTabApi 可能在构造时就建好了播放器，
+        // 也可能要等到 playerReady，所以两处都试一次（attach 自己会去重）
+        const attachFx = () => {
+          if (cancelled) return;
+          fx.attach(api);
+        };
+        attachFx();
+
         // 解析完成后把每一格的 Note 收进索引，拨弦时直接取
         api.scoreLoaded.on((score) => {
           const map = notesRef.current;
@@ -110,11 +137,12 @@ export function useUkulelePlayer({
         });
 
         // 整块指板的谱面：每格一个小节的全音符，`\tempo` 由余音时长反推
-        api.tex(boardTex({ tuning, ringSeconds, frets, stringCount }));
+        api.tex(boardTex({ tuning, instrument, ringSeconds, frets, stringCount }));
 
         // playerReady 自带就绪检查，注册时会立刻回调，不存在错过事件的问题
         api.playerReady.on(() => {
           if (cancelled) return;
+          attachFx();
           setStatus("ready");
           const pending = pendingRef.current;
           if (pending) {
@@ -151,6 +179,7 @@ export function useUkulelePlayer({
       aliveRef.current = false;
       if (idleId !== undefined) window.cancelIdleCallback(idleId);
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      fx.detach();
       apiRef.current?.destroy();
       apiRef.current = null;
       notesRef.current.clear();

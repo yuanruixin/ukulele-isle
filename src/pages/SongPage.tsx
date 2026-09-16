@@ -2,6 +2,8 @@ import { useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import * as alphaTab from "@coderline/alphatab";
 import { getSong } from "../songs";
+import { siteConfig } from "../config/site.config";
+import { useSynthFx } from "../hooks/useSynthFx";
 import ScoreView from "../components/ScoreView";
 import PlayerBar from "../components/PlayerBar";
 
@@ -9,6 +11,8 @@ export default function SongPage() {
   const { id } = useParams<{ id: string }>();
   const song = id ? getSong(id) : undefined;
   const apiRef = useRef<alphaTab.AlphaTabApi | null>(null);
+  /** 输出效果链（低通 + 混响）。接线在 ScoreView 里；挂不挂由 ★ `player.fx.enabled` 决定 */
+  const fx = useSynthFx(siteConfig.player.fx);
 
   if (!song) {
     return (
@@ -27,7 +31,7 @@ export default function SongPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-5 pb-28">
-      <nav className="py-4">
+      <nav className="flex items-center py-4">
         <Link
           to="/"
           className="text-sm font-medium"
@@ -53,7 +57,7 @@ export default function SongPage() {
         </div>
       </header>
 
-      <ScoreView song={song} apiRef={apiRef} />
+      <ScoreView song={song} apiRef={apiRef} fx={fx} />
       <PlayerBar apiRef={apiRef} />
     </main>
   );

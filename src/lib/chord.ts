@@ -52,6 +52,8 @@ export interface ChordPlaybackOptions {
   ringSeconds: number;
   /** 调弦（alphaTex 写法，高音弦在前） */
   tuning: string;
+  /** 试听音色（GM 音色号，0 基）。不写的话 alphaTab 默认 25 钢弦吉他，尤克里里会偏尖 */
+  instrument: number;
 }
 
 /** 试听用的速度：把和弦写成一个全音符撑满一小节，于是「余音时长」直接决定速度 */
@@ -85,13 +87,14 @@ export function strumTiming(
 /**
  * 由和弦指法生成一段可直接 `api.tex()` 的 alphaTex。
  *
- * 两个容易踩的点（都在 1.8.4 上实测过）：
+ * 三个容易踩的点（都在 1.8.4 上实测过）：
  * 1. 和弦必须用括号包成一个 beat，否则每个音会被当成独立的四分音符依次弹响；
- * 2. beat 效果（`{bd N}`）必须写在音符**后面**——解析顺序是 `:时值 → 音符 → .附点 → *倍数 → {效果}`。
+ * 2. beat 效果（`{bd N}`）必须写在音符**后面**——解析顺序是 `:时值 → 音符 → .附点 → *倍数 → {效果}`；
+ * 3. `\instrument` **有位置要求**：必须落在 `.`（元数据段结束）之后、`\tuning` 之前才生效。
  */
 export function chordTex(
   chord: ChordConfig,
-  { strumSpreadMs, ringSeconds, tuning }: ChordPlaybackOptions,
+  { strumSpreadMs, ringSeconds, tuning, instrument }: ChordPlaybackOptions,
 ): string {
   const { tempo, brushDuration } = strumTiming(chord.frets.length, {
     strumSpreadMs,
@@ -105,6 +108,7 @@ export function chordTex(
   return [
     `\\tempo ${Math.round(tempo)}`,
     ".",
+    `\\instrument ${instrument}`,
     `\\tuning ${tuning}`,
     "\\ts 4 4",
     // bd = BrushDown（4弦→1弦），参数是刷弦时长（tick）；音符本身是全音符，决定余音

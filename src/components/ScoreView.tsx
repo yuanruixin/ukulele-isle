@@ -3,6 +3,8 @@ import * as alphaTab from "@coderline/alphatab";
 import { siteConfig } from "../config/site.config";
 import { usePlayerStore } from "../store/playerStore";
 import { useThemeStore } from "../store/themeStore";
+import { withDefaultInstrument } from "../lib/songTex";
+import type { SynthFxController } from "../hooks/useSynthFx";
 import type { Song } from "../types/song";
 
 type ScoreColors = Record<
@@ -58,10 +60,12 @@ function applyScoreTheme(api: alphaTab.AlphaTabApi, dark: boolean) {
 interface Props {
   song: Song;
   apiRef: React.MutableRefObject<alphaTab.AlphaTabApi | null>;
+  /** 输出效果链（低通 + 混响）的控制器，由页面创建（它还要拿 `enabled` 渲染开关） */
+  fx: SynthFxController;
 }
 
 /** 谱面视图：alphaTab 渲染 TAB 四线谱 + 播放光标/节拍高亮 */
-export default function ScoreView({ song, apiRef }: Props) {
+export default function ScoreView({ song, apiRef, fx }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { setPlaying, setPlayerReady, speed, muted } = usePlayerStore();
   const isPlaying = usePlayerStore((s) => s.isPlaying);
@@ -111,7 +115,14 @@ export default function ScoreView({ song, apiRef }: Props) {
     } as unknown as alphaTab.json.SettingsJson);
     apiRef.current = api;
 
-    api.playerReady.on(() => setPlayerReady(true));
+    // 输出效果链（低通 + 混响）：挂在合成器输出节点后面。
+    // alphaTab 可能在构造时就建好了播放器，也可能要等到 playerReady —— 两处都试一次
+    // （attach 自己会去重，重复调没有副作用）。
+    fx.attach(api);
+    api.playerReady.on(() => {
+      setPlayerReady(true);
+      fx.attach(api);
+    });
     api.playerStateChanged.on(({ state }) =>
       setPlaying(state === alphaTab.synth.PlayerState.Playing)
     );
@@ -146,9 +157,11 @@ export default function ScoreView({ song, apiRef }: Props) {
       api.render();
     });
 
-    api.tex(song.scoreTex);
+    // 谱面里没写 \instrument 的，统一补上站点音色（作者写了就以作者为准）
+    api.tex(withDefaultInstrument(song.scoreTex, siteConfig.player.instrument));
 
     return () => {
+      fx.detach();
       api.destroy();
       apiRef.current = null;
       setPlaying(false);
