@@ -25,6 +25,24 @@ export interface TunerStringConfig {
   side: "left" | "right";
 }
 
+/** 和弦库里的一个和弦 */
+export interface ChordConfig {
+  /** 和弦名（卡片标题） */
+  name: string;
+  /**
+   * ★ 各弦品位，**顺序与 alphaTab 一致：高音弦在前**
+   *   —— 也就是 [1弦 A, 2弦 E, 3弦 C, 4弦 G]。
+   *   -1 表示该弦不弹（图上画 ×）。
+   */
+  frets: number[];
+  /**
+   * ★ 各弦手指编号，与 frets 一一对应：
+   *   1 = 食指，2 = 中指，3 = 无名指，4 = 小指，0 = 不按（空弦或不弹）。
+   *   只影响图上圆点里的数字，不影响发声。
+   */
+  fingers: number[];
+}
+
 export const siteConfig = {
   /** 站点名称（导航栏 / 标题） */
   siteName: "屿琴",
@@ -63,9 +81,39 @@ export const siteConfig = {
     /** ★ 工具列表（有 to = 已实现，可点击进入；badge 为角标文案，留空则不显示） */
     items: [
       { name: "调音器", description: "听音校准 GCEA 四根弦", to: "/tools/tuner" },
+      {
+        name: "和弦库",
+        description: "C F Am G · 点一下听声音",
+        to: "/tools/chords",
+      },
       { name: "节拍器", description: "稳稳地练，从慢到快", badge: "敬请期待" },
-      { name: "和弦库", description: "常用和弦指法速查", badge: "敬请期待" },
     ] as ToolItem[],
+  },
+
+  /** ★ 和弦库 */
+  chords: {
+    /** ★ 试听音量（0 - 1） */
+    volume: 1,
+    /** ★ 扫弦总跨度（毫秒）：四根弦从第一根到最后一根的间隔，越小越像「一下扫过」 */
+    strumSpreadMs: 160,
+    /** ★ 扫完之后余音时长（秒）：决定和弦按住能响多久 */
+    ringSeconds: 2.4,
+    /**
+     * ★ 试听用的调弦（alphaTex 写法，**高音弦在前** = 1弦→4弦）。
+     *   需与上方 tuner.strings 保持一致：换 Low-G / 男声调弦时两处都要改。
+     */
+    tuning: "a4 e4 c4 g4",
+    /**
+     * ★ 和弦列表 —— 数组顺序 = 页面显示顺序。
+     *   默认按 C 调的 I–IV–vi–V（弹唱万能和弦走向）排列，不是按字母排。
+     *   指法顺序见 ChordConfig.frets 的说明（高音弦在前）。
+     */
+    items: [
+      { name: "C", frets: [3, 0, 0, 0], fingers: [3, 0, 0, 0] },
+      { name: "F", frets: [0, 1, 0, 2], fingers: [0, 1, 0, 2] },
+      { name: "Am", frets: [0, 0, 0, 2], fingers: [0, 0, 0, 2] },
+      { name: "G", frets: [2, 3, 2, 0], fingers: [2, 3, 1, 0] },
+    ] as ChordConfig[],
   },
 
   /** ★ 调音器 */
