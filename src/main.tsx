@@ -1,19 +1,27 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { HashRouter, Route, Routes } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import HomePage from "./pages/HomePage";
-import SongPage from "./pages/SongPage";
 import "./styles/globals.css";
+
+// 详情页懒加载：alphaTab 体积大（~1.2MB），只在进入歌曲页时才下载
+const SongPage = lazy(() => import("./pages/SongPage"));
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <HashRouter>
       <NavBar />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/song/:id" element={<SongPage />} />
-      </Routes>
+      <Suspense
+        fallback={
+          <p className="text-secondary py-24 text-center text-sm">加载中…</p>
+        }
+      >
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/song/:id" element={<SongPage />} />
+        </Routes>
+      </Suspense>
     </HashRouter>
   </React.StrictMode>
 );
