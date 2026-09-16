@@ -16,6 +16,12 @@ export const siteConfig = {
     beatHighlight: true,
     /** ★ 谱面默认缩放 */
     scale: 1.0,
+    /** ★ 每行固定小节数（正数 = 强制每行该节数） */
+    barsPerRow: 2,
+    /** ★ 移动端每行小节数（屏幕宽度 <640px 时生效，窄屏建议 1） */
+    barsPerRowMobile: 1,
+    /** ★ 行内小节等宽（true = 各节平分行宽；false = 按内容密度分配宽度） */
+    equalBarWidth: true,
   },
 
   search: {

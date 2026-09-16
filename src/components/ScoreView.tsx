@@ -13,6 +13,7 @@ interface Props {
 export default function ScoreView({ song, apiRef }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { setPlaying, setPlayerReady, speed, muted } = usePlayerStore();
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
 
   // 初始化 alphaTab（每首歌一次）
   useEffect(() => {
@@ -39,6 +40,12 @@ export default function ScoreView({ song, apiRef }: Props) {
       },
       display: {
         scale: siteConfig.player.scale,
+        // Parchment 布局：按 score 模型中的排版信息（行节数 / 节宽比例）渲染，
+        // 配合下方 scoreLoaded 中的 systemsLayout + displayScale 实现行内小节等宽。
+        // 注意：Parchment 模式下 barsPerRow 设置不生效，行节数由 score.systemsLayout 决定。
+        layoutMode: siteConfig.player.equalBarWidth ? "parchment" : "page",
+        // Page 布局下固定每行小节数（Parchment 模式忽略此项）
+        barsPerRow: siteConfig.player.barsPerRow,
         resources,
       },
       notation: {
@@ -55,7 +62,7 @@ export default function ScoreView({ song, apiRef }: Props) {
       },
       player: {
         enablePlayer: true,
-        soundFont: "/soundfont/sonivox.sf2",
+        soundFont: "/soundfont/sonivox.sf3", // sf3 比 sf2 小 ~28%，音质相当
         enableCursor: siteConfig.player.beatHighlight,
         enableAnimatedBeatCursor: siteConfig.player.beatHighlight,
         enableUserInteraction: true, // 点击谱面跳转播放位置
@@ -75,6 +82,25 @@ export default function ScoreView({ song, apiRef }: Props) {
           staff.showStandardNotation = false;
           staff.showTablature = true;
         }
+      }
+      if (siteConfig.player.equalBarWidth) {
+        // Parchment 布局的排版信息来自模型。注意：单轨渲染时行节数读的是
+        // 【track 级】systemsLayout/defaultSystemsLayout（score 级仅多轨时生效），
+        // 且 systemsLayout 数组优先于 defaultSystemsLayout，两者都要设。
+        // 窄屏（手机）自动降为每行 1 节，避免音符挤在一起
+        const perRow = window.matchMedia("(max-width: 639px)").matches
+          ? siteConfig.player.barsPerRowMobile
+          : siteConfig.player.barsPerRow;
+        const rows = Array.from(
+          { length: Math.ceil(score.masterBars.length / perRow) },
+          () => perRow
+        );
+        for (const track of score.tracks) {
+          track.defaultSystemsLayout = perRow;
+          track.systemsLayout = rows;
+        }
+        // 行内等宽：各节宽度权重相同（默认即为 1，显式设置以防谱面自带值）
+        for (const mb of score.masterBars) mb.displayScale = 1;
       }
       api.render();
     });
@@ -99,7 +125,10 @@ export default function ScoreView({ song, apiRef }: Props) {
   }, [muted, apiRef]);
 
   return (
-    <div className="card overflow-x-auto p-4 sm:p-6">
+    // playing 类控制光标/高亮显隐（见 globals.css）；移动端减小内边距给谱面让出宽度
+    <div
+      className={`card score-view overflow-x-auto p-2 sm:p-6${isPlaying ? " playing" : ""}`}
+    >
       <div ref={containerRef} />
     </div>
   );

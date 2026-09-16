@@ -104,3 +104,10 @@ body {
   background: var(--accent) !important;
   opacity: 0.12;
 }
+
+/* 未播放时隐藏光标与节拍高亮：空闲态的大块蓝色背景会盖住谱面内容（弦音图例等） */
+.score-view:not(.playing) .at-cursor-bar,
+.score-view:not(.playing) .at-cursor-beat,
+.score-view:not(.playing) .at-highlight {
+  display: none;
+}
