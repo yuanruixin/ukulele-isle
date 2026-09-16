@@ -1,6 +1,60 @@
-import { siteConfig } from "../config/site.config";
+import { Link } from "react-router-dom";
+import { siteConfig, type ToolItem } from "../config/site.config";
 
-/** 工具页：占位展示规划中的练琴工具，后续逐个实现 */
+/** 单张工具卡片：已实现的可以点击进入，规划中的置灰 */
+function ToolCard({ tool }: { tool: ToolItem }) {
+  const inner = (
+    <div className="flex items-center justify-between gap-4">
+      <div className="flex min-w-0 items-center gap-4">
+        {/* 首字徽标 */}
+        <span
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-semibold text-white"
+          style={{ background: tool.to ? "var(--accent)" : "var(--text-secondary)" }}
+          aria-hidden
+        >
+          {tool.name.slice(0, 1)}
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-lg font-semibold tracking-tight">{tool.name}</h3>
+          <p className="text-secondary mt-0.5 text-sm">{tool.description}</p>
+        </div>
+      </div>
+
+      {tool.badge ? (
+        <span
+          className="text-secondary shrink-0 rounded-full px-2.5 py-1 text-xs"
+          style={{ background: "var(--border)" }}
+        >
+          {tool.badge}
+        </span>
+      ) : (
+        <span
+          className="shrink-0 text-xl"
+          style={{ color: "var(--accent)" }}
+          aria-hidden
+        >
+          ›
+        </span>
+      )}
+    </div>
+  );
+
+  if (!tool.to) {
+    return (
+      <div className="card p-6" style={{ opacity: 0.62 }}>
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <Link to={tool.to} className="card block p-6">
+      {inner}
+    </Link>
+  );
+}
+
+/** 工具页：练琴小工具入口（调音器已实现，其余规划中） */
 export default function ToolsPage() {
   return (
     <main className="mx-auto max-w-4xl px-5 pb-24">
@@ -11,36 +65,7 @@ export default function ToolsPage() {
 
       <section className="mx-auto grid max-w-2xl gap-4">
         {siteConfig.tools.items.map((tool) => (
-          <div key={tool.name} className="card p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-4">
-                {/* 首字徽标 */}
-                <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-semibold text-white"
-                  style={{ background: "var(--accent)" }}
-                  aria-hidden
-                >
-                  {tool.name.slice(0, 1)}
-                </span>
-                <div className="min-w-0">
-                  <h3 className="text-lg font-semibold tracking-tight">
-                    {tool.name}
-                  </h3>
-                  <p className="text-secondary mt-0.5 text-sm">
-                    {tool.description}
-                  </p>
-                </div>
-              </div>
-              {tool.badge && (
-                <span
-                  className="text-secondary shrink-0 rounded-full px-2.5 py-1 text-xs"
-                  style={{ background: "var(--border)" }}
-                >
-                  {tool.badge}
-                </span>
-              )}
-            </div>
-          </div>
+          <ToolCard key={tool.name} tool={tool} />
         ))}
       </section>
     </main>

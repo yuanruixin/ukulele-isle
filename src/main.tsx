@@ -5,6 +5,7 @@ import NavBar from "./components/NavBar";
 import HomePage from "./pages/HomePage";
 import SongsPage from "./pages/SongsPage";
 import ToolsPage from "./pages/ToolsPage";
+import TunerPage from "./pages/TunerPage";
 import "./styles/globals.css";
 
 // 详情页懒加载：alphaTab 体积大（~1.2MB），只在进入歌曲页时才下载
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/" element={<HomePage />} />
           <Route path="/songs" element={<SongsPage />} />
           <Route path="/tools" element={<ToolsPage />} />
+          <Route path="/tools/tuner" element={<TunerPage />} />
           <Route path="/song/:id" element={<SongPage />} />
         </Routes>
       </Suspense>

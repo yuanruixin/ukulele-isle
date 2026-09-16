@@ -1,6 +1,30 @@
 /**
  * ★ 站点配置 —— 所有站点级可调项集中在这里修改 ★
  */
+
+/** 工具卡片：有 to 表示已实现可点击，无 to 表示尚在规划 */
+export interface ToolItem {
+  name: string;
+  description: string;
+  to?: string;
+  /** 角标文案，留空则不显示 */
+  badge?: string;
+}
+
+/** 调音器的一根弦 */
+export interface TunerStringConfig {
+  id: string;
+  /** 音名 */
+  note: string;
+  octave: number;
+  /** 空弦频率（Hz） */
+  freq: number;
+  /** 弦序说明 */
+  label: string;
+  /** 按钮落在琴头的哪一侧 */
+  side: "left" | "right";
+}
+
 export const siteConfig = {
   /** 站点名称（导航栏 / 标题） */
   siteName: "屿琴",
@@ -36,12 +60,36 @@ export const siteConfig = {
   ],
 
   tools: {
-    /** ★ 工具列表占位（后续逐个实现；badge 为角标文案，留空则不显示） */
+    /** ★ 工具列表（有 to = 已实现，可点击进入；badge 为角标文案，留空则不显示） */
     items: [
-      { name: "调音器", description: "听音校准 GCEA 四根弦", badge: "敬请期待" },
+      { name: "调音器", description: "听音校准 GCEA 四根弦", to: "/tools/tuner" },
       { name: "节拍器", description: "稳稳地练，从慢到快", badge: "敬请期待" },
       { name: "和弦库", description: "常用和弦指法速查", badge: "敬请期待" },
-    ],
+    ] as ToolItem[],
+  },
+
+  /** ★ 调音器 */
+  tuner: {
+    /** ★ 乐器名（显示在标题下方） */
+    instrument: "尤克里里",
+    /** ★ 调弦法名称 */
+    tuningName: "标准",
+    /** ★ 音准容差（cent）：|偏差| ≤ 该值即判定为准 */
+    toleranceCents: 5,
+    /** ★ 指示器刻度范围（cent）：指针在 ±该值 之间移动 */
+    rangeCents: 50,
+    /** ★ 默认选中的弦 id；null = 进入页面不预选任何弦（按钮均不高亮，与参考设计一致） */
+    defaultStringId: null as string | null,
+    /**
+     * ★ 标准调弦 GCEA（数组顺序 = 按钮在琴头同侧的上下顺序；
+     *   改 freq 即可切换 Low-G / 男声调弦等）
+     */
+    strings: [
+      { id: "C", note: "C", octave: 4, freq: 261.63, label: "3 弦", side: "left" },
+      { id: "G", note: "G", octave: 4, freq: 392.0, label: "4 弦", side: "left" },
+      { id: "E", note: "E", octave: 4, freq: 329.63, label: "2 弦", side: "right" },
+      { id: "A", note: "A", octave: 4, freq: 440.0, label: "1 弦", side: "right" },
+    ] as TunerStringConfig[],
   },
 } as const;
 
