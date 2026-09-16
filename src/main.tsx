@@ -7,6 +7,7 @@ import SongsPage from "./pages/SongsPage";
 import ToolsPage from "./pages/ToolsPage";
 import TunerPage from "./pages/TunerPage";
 import ChordsPage from "./pages/ChordsPage";
+import UkulelePage from "./pages/UkulelePage";
 import "./styles/globals.css";
 
 // 详情页懒加载：alphaTab 体积大（~1.2MB），只在进入歌曲页时才下载
@@ -28,6 +29,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/tools/tuner" element={<TunerPage />} />
           {/* 和弦库本身很轻（alphaTab 由页面内部动态 import，会切成独立 chunk） */}
           <Route path="/tools/chords" element={<ChordsPage />} />
+          {/* 虚拟尤克里里同理：指板是自绘 SVG，alphaTab 与上面几个页面共用同一份 chunk */}
+          <Route path="/tools/uke" element={<UkulelePage />} />
           <Route path="/song/:id" element={<SongPage />} />
         </Routes>
       </Suspense>

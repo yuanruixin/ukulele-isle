@@ -43,6 +43,20 @@ export interface ChordConfig {
   fingers: number[];
 }
 
+/** 虚拟尤克里里的一根弦 */
+export interface UkeStringConfig {
+  /** 弦序：1 = 最高音的那根（与 alphaTab 的弦序、调音器的编号习惯一致） */
+  id: number;
+  /** 空弦音名 */
+  note: string;
+  /** 空弦八度 */
+  octave: number;
+  /** 弦号文案（读数里显示「3 弦」这类） */
+  label: string;
+  /** 图上这根弦的粗细（指板坐标系的 SVG 单位） */
+  width: number;
+}
+
 export const siteConfig = {
   /** 站点名称（导航栏 / 标题） */
   siteName: "屿琴",
@@ -97,7 +111,11 @@ export const siteConfig = {
         description: "C F Am G · 点一下听声音",
         to: "/tools/chords",
       },
-      { name: "节拍器", description: "稳稳地练，从慢到快", badge: "敬请期待" },
+      {
+        name: "虚拟尤克里里",
+        description: "点指板出声 · 能录能回放",
+        to: "/tools/uke",
+      },
     ] as ToolItem[],
   },
 
@@ -125,6 +143,60 @@ export const siteConfig = {
       { name: "Am", frets: [0, 0, 0, 2], fingers: [0, 0, 0, 2] },
       { name: "G", frets: [2, 3, 2, 0], fingers: [2, 3, 1, 0] },
     ] as ChordConfig[],
+  },
+
+  /** ★ 虚拟尤克里里（点指板出声 + 录制回放） */
+  uke: {
+    /** ★ 试听音量（0 - 1） */
+    volume: 1,
+    /** ★ 指板到第几品（也是可弹音域：谱面数据按这个范围生成） */
+    frets: 12,
+    /** ★ 窄屏（<640px）只显示到第几品：12 品在手机上每格不到 20px，手指点不准 */
+    fretsMobile: 7,
+    /** ★ 桌面端的弦间距（指板坐标单位）= 每格的高度 */
+    rowGap: 40,
+    /**
+     * ★ 窄屏的弦间距：竖置时指板按剩余高度等比缩放，弦间距给大一些
+     *   ——它决定每根弦那一列有多宽（约 = 该值 × 缩放比），太小手指就点不准。
+     *   调大还会让整块指板变宽（比例上更铺满屏宽），但格子本身的大小由高度决定、不受影响。
+     */
+    rowGapMobile: 64,
+    /** ★ 余音时长（秒）：决定这个音能响多久，也是弦晃动的衰减时长 */
+    ringSeconds: 2.2,
+    /** ★ 弦晃动幅度（指板坐标系单位，约为弦间距的 1/6） */
+    wobbleAmplitude: 6,
+    /** ★ 弦来回晃动的频率（Hz）——**视觉频率，不是音高**（音高由音色库决定） */
+    wobbleHz: 14,
+    /** ★ 录制上限（个音） */
+    maxRecordNotes: 120,
+    /** ★ 回放时最后一个音响完再等多久收尾（毫秒） */
+    replayTailMs: 400,
+    /**
+     * ★ 调弦（alphaTex 写法，**高音弦在前**）。
+     *   需与 tuner.strings / chords.tuning 保持一致：换 Low-G / 男声调弦时三处都要改。
+     */
+    tuning: "a4 e4 c4 g4",
+    /**
+     * ★ 弦在指板上的堆叠顺序。**一个开关同时决定横置与竖置**——竖置只是把横置的指板
+     *   顺时针转 90°，横置的「上 → 下」对应竖置的「右 → 左」：
+     *   - `"1-4"`（默认）：横置 上→下 = 1,2,3,4 弦；竖置 4 弦在**左**、1 弦在右
+     *   - `"4-1"`：横置 上→下 = 4,3,2,1 弦；竖置 4 弦在**右**、1 弦在左
+     *   `"1-4"` 与 TAB 谱的弦序一致（TAB 最上面那根线就是 1 弦 A，本项目里也是音最高的那根）。
+     *   ⚠️ 键盘键位行与弦的对应关系会跟着一起翻，不用另外改（见 lib/ukeKeys.ts）。
+     */
+    stringOrder: "1-4" as "1-4" | "4-1",
+    /**
+     * ★ 四根弦，**顺序与 alphaTab 一致：高音弦在前（1 弦 → 4 弦）**。
+     *   这里定义的是**弦序本身**（哪根叫 1 弦、什么音），**画在指板的哪个位置由上面的
+     *   `stringOrder` 决定**——两件事分开，改摆放不会动到音。
+     *   width 是按真实弦径给的（3 弦 C 最粗、1 弦 A 最细）。
+     */
+    strings: [
+      { id: 1, note: "A", octave: 4, label: "1 弦", width: 1.4 },
+      { id: 2, note: "E", octave: 4, label: "2 弦", width: 1.9 },
+      { id: 3, note: "C", octave: 4, label: "3 弦", width: 2.5 },
+      { id: 4, note: "G", octave: 4, label: "4 弦", width: 1.7 },
+    ] as UkeStringConfig[],
   },
 
   /** ★ 调音器 */

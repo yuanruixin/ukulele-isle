@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { siteConfig, type ToolItem } from "../config/site.config";
 
-/** 单张工具卡片：已实现的可以点击进入，规划中的置灰 */
+/** 单张工具卡片：已实现的可以点击进入，规划中的置灰（当前三个都已实现） */
 function ToolCard({ tool }: { tool: ToolItem }) {
   const inner = (
     <div className="flex items-center justify-between gap-4">
@@ -54,7 +54,7 @@ function ToolCard({ tool }: { tool: ToolItem }) {
   );
 }
 
-/** 工具页：练琴小工具入口（调音器已实现，其余规划中） */
+/** 工具页：练琴小工具入口（调音器 / 和弦库 / 虚拟尤克里里） */
 export default function ToolsPage() {
   return (
     <main className="mx-auto max-w-4xl px-5 pb-24">

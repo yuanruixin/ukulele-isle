@@ -37,7 +37,7 @@ export default function HomePage() {
             <div className="min-w-0">
               <h3 className="text-lg font-semibold tracking-tight">工具</h3>
               <p className="text-secondary mt-1 text-sm leading-relaxed">
-                调音器、节拍器、和弦库
+                调音器、和弦库、虚拟尤克里里
               </p>
             </div>
             <span

@@ -13,6 +13,10 @@
   --border: rgba(0, 0, 0, 0.08);
   /* 调音器刻度线：比 border 稍深一些，浅色底上才看得清 */
   --tick: rgba(0, 0, 0, 0.18);
+  /* 虚拟尤克里里：指板底色（琴头一侧的「空弦区」略深一档）与命中格悬停色 */
+  --board: rgba(0, 0, 0, 0.045);
+  --board-head: rgba(0, 0, 0, 0.085);
+  --pick-hover: rgba(0, 0, 0, 0.06);
   /* iOS 风格开关的关闭态轨道 */
   --switch-off: rgba(120, 120, 128, 0.16);
   /* 外观开关（ThemeSwitch）：浅色下是「浅灰轨道 + 白色浮起滑块」，深色下整体压暗、
@@ -38,6 +42,9 @@
   --accent-pressed: #409cff;
   --border: rgba(255, 255, 255, 0.12);
   --tick: rgba(255, 255, 255, 0.22);
+  --board: rgba(255, 255, 255, 0.05);
+  --board-head: rgba(255, 255, 255, 0.09);
+  --pick-hover: rgba(255, 255, 255, 0.09);
   --switch-off: rgba(120, 120, 128, 0.32);
   --toggle-track: #2c2c2e;
   --toggle-track-hover: #333335;
@@ -294,4 +301,22 @@ body {
 .score-view:not(.playing) .at-cursor-beat,
 .score-view:not(.playing) .at-highlight {
   display: none;
+}
+
+/* ★ 虚拟尤克里里：拨弦瞬间向外扩散的一圈（点哪响哪的即时反馈）★ */
+/* 变换原点在圆心：SVG 里要显式声明 transform-box/transform-origin（写在元素的行内样式上） */
+.pluck-ring {
+  animation: pluck-ring 520ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  pointer-events: none;
+}
+
+@keyframes pluck-ring {
+  from {
+    transform: scale(0.25);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(2);
+    opacity: 0;
+  }
 }
