@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import { HashRouter, Route, Routes } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import HomePage from "./pages/HomePage";
+import SongsPage from "./pages/SongsPage";
+import ToolsPage from "./pages/ToolsPage";
 import "./styles/globals.css";
 
 // 详情页懒加载：alphaTab 体积大（~1.2MB），只在进入歌曲页时才下载
@@ -19,6 +21,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       >
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/songs" element={<SongsPage />} />
+          <Route path="/tools" element={<ToolsPage />} />
           <Route path="/song/:id" element={<SongPage />} />
         </Routes>
       </Suspense>

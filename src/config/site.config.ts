@@ -28,6 +28,21 @@ export const siteConfig = {
     /** ★ 搜索框占位符 */
     placeholder: "搜索歌曲、艺术家或标签…",
   },
+
+  /** ★ 导航栏入口（桌面端平铺在右侧；移动端收进右上角汉堡菜单，从上到下依次排列） */
+  nav: [
+    { label: "曲谱", to: "/songs" },
+    { label: "工具", to: "/tools" },
+  ],
+
+  tools: {
+    /** ★ 工具列表占位（后续逐个实现；badge 为角标文案，留空则不显示） */
+    items: [
+      { name: "调音器", description: "听音校准 GCEA 四根弦", badge: "敬请期待" },
+      { name: "节拍器", description: "稳稳地练，从慢到快", badge: "敬请期待" },
+      { name: "和弦库", description: "常用和弦指法速查", badge: "敬请期待" },
+    ],
+  },
 } as const;
 
 export type SiteConfig = typeof siteConfig;

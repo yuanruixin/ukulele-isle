@@ -66,6 +66,76 @@ body {
   color: var(--text-secondary);
 }
 
+/* ★ 移动端汉堡按钮：三条横线 ⇄ 叉号 ★ */
+/* 注意：display/flex 布局必须写在元素的 Tailwind 类里（flex flex-col items-center justify-center），
+   不能写在这个非分层 CSS 类中——非分层样式优先级高于 Tailwind utilities 层，会顶掉 sm:hidden */
+.menu-btn {
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  margin-right: -8px; /* 视觉对齐右侧边缘 */
+  border-radius: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.menu-btn span {
+  display: block;
+  width: 20px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--text);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+}
+
+.menu-btn.open span:nth-child(1) {
+  transform: translateY(6.5px) rotate(45deg);
+}
+
+.menu-btn.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.menu-btn.open span:nth-child(3) {
+  transform: translateY(-6.5px) rotate(-45deg);
+}
+
+/* 移动端下拉菜单入场：整体淡入，选项从上到下依次浮现 */
+.mobile-menu {
+  animation: menu-fade 0.22s ease both;
+}
+
+.mobile-menu-item {
+  animation: menu-item-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.mobile-nav-item {
+  border-bottom: 0.5px solid var(--border);
+}
+
+.mobile-menu-item:last-child .mobile-nav-item {
+  border-bottom: none;
+}
+
+@keyframes menu-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes menu-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* 分段控件（速度选择） */
 .segmented {
   display: inline-flex;
