@@ -77,7 +77,7 @@ ADR 0009 只修了**虚拟尤克里里**一个播放器，并在「后果」里�
 
 ## 验证（2026-09-17）
 
-`tsc --noEmit` 与 `npm run build` 均通过（主包 231.1 → 232.2 KB）。
+`tsc --noEmit` 与 `pnpm  build` 均通过（主包 231.1 → 232.2 KB）。
 
 **音色层（离线、确定性）**——用 Node + `AlphaTexImporter` 直接解析谱面，不看渲染结果：
 
@@ -131,6 +131,6 @@ ADR 0009 只修了**虚拟尤克里里**一个播放器，并在「后果」里�
    `fxEnabled` / `setFxEnabled`。
 5. **`Switch.tsx`** 头部注释更新为「目前只有调音器的自动识别在用」。
 
-**新版验收**：`tsc --noEmit` 与 `npm run build` 通过；三个页面在浏览器里回归——
+**新版验收**：`tsc --noEmit` 与 `pnpm run build` 通过；三个页面在浏览器里回归——
 页面上没有任何开关残留、`src` 里搜不到 `fxEnabled` / `setEnabled` / `音色润色`（只剩注释里
 解释「为什么撤掉」的那一处）、效果链照常改接、三种内容都还能出声。

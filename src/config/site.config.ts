@@ -2,11 +2,20 @@
  * ★ 站点配置 —— 所有站点级可调项集中在这里修改 ★
  */
 
+/**
+ * ★ 工具卡片的图标名。
+ *   可选值 = `src/components/icons/index.tsx` 里 `TOOL_ICONS` 的键。
+ *   换图标：去那个文件改指向的组件，再回来把这里的词改掉——写错了编译期就会报。
+ */
+export type ToolIconName = "tuning-fork" | "grid-2x2" | "guitar";
+
 /** 工具卡片：有 to 表示已实现可点击，无 to 表示尚在规划 */
 export interface ToolItem {
   name: string;
   description: string;
   to?: string;
+  /** ★ 卡片左侧的图标（见上方 ToolIconName） */
+  icon: ToolIconName;
   /** 角标文案，留空则不显示 */
   badge?: string;
 }
@@ -152,16 +161,23 @@ export const siteConfig = {
   tools: {
     /** ★ 工具列表（有 to = 已实现，可点击进入；badge 为角标文案，留空则不显示） */
     items: [
-      { name: "调音器", description: "听音校准 GCEA 四根弦", to: "/tools/tuner" },
+      {
+        name: "调音器",
+        description: "听音校准 GCEA 四根弦",
+        to: "/tools/tuner",
+        icon: "tuning-fork",
+      },
       {
         name: "和弦库",
         description: "C F Am G · 点一下听声音",
         to: "/tools/chords",
+        icon: "grid-2x2",
       },
       {
         name: "虚拟尤克里里",
         description: "点指板出声 · 能录能回放",
         to: "/tools/uke",
+        icon: "guitar",
       },
     ] as ToolItem[],
   },

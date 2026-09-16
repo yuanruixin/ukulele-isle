@@ -1,18 +1,20 @@
 import { Link } from "react-router-dom";
 import { siteConfig, type ToolItem } from "../config/site.config";
+import { TOOL_ICONS } from "../components/icons";
 
 /** 单张工具卡片：已实现的可以点击进入，规划中的置灰（当前三个都已实现） */
 function ToolCard({ tool }: { tool: ToolItem }) {
+  const Icon = TOOL_ICONS[tool.icon];
   const inner = (
     <div className="flex items-center justify-between gap-4">
       <div className="flex min-w-0 items-center gap-4">
-        {/* 首字徽标 */}
+        {/* 图标徽标：图标描边取 currentColor，所以颜色由外面的 text-* 决定 */}
         <span
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-semibold text-white"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white"
           style={{ background: tool.to ? "var(--accent)" : "var(--text-secondary)" }}
           aria-hidden
         >
-          {tool.name.slice(0, 1)}
+          <Icon size={22} />
         </span>
         <div className="min-w-0">
           <h3 className="text-lg font-semibold tracking-tight">{tool.name}</h3>
