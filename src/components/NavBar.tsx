@@ -49,7 +49,8 @@ export default function NavBar() {
     <>
       <header className="glass sticky top-0 z-50">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-5">
-          <Link to="/" className="flex items-baseline gap-2">
+          <Link to="/" className="brand-lockup flex items-center gap-2" aria-label={siteConfig.siteName}>
+            <img src="/icons/music-cat-32.png" alt="" className="brand-mark" />
             <span className="text-lg font-semibold tracking-tight">
               {siteConfig.siteName}
             </span>
