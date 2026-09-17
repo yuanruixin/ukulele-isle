@@ -1,0 +1,1 @@
+../.agents/skills/bitmap-to-svg-replica/scripts/rig-parts.py

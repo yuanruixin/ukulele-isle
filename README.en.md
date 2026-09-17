@@ -76,27 +76,33 @@ src/
   pages/                  7 pages
   components/             UI parts (chords / tuner / uke / icons subfolders)
   hooks/                  players and audio wiring (useSynthFx / useTuner / useChordPlayer / useUkulelePlayer / useUkuleleRecording)
-  lib/                    page-agnostic logic (synthFx / pitch / chord / ukulele / ukeKeys / songTex)
+  lib/                    page-agnostic logic (synthFx / pitch / chord / ukulele / ukeKeys / songTex / catMotion)
+  data/                   cat skeleton **metadata** (cats.ts, generated) + hand-written geometry delivery (catArt.ts)
+  assets/cats/*.svg       cat skeleton **geometry** (generated, one file per pose, readable and diffable)
   store/                  Zustand: themeStore / playerStore
   songs/index.ts          scans songs/ at build time to build the catalogue
 public/
   font/  images/  soundfont/  icons/
 docs/
-  adr/                    10 architecture decision records
+  adr/                    12 architecture decision records
   images/                 README screenshots
   alphatex.md             alphaTex cheat-sheet
   score-spec.md           numbered-notation spec (used by python3 .agents/skills/uke-scoregen/scripts/scoregen.py)
   musicxml-sources.md     where to find scores (source tiers / licensing)
-scripts/                  shared tools: musicxml2tex.py (tex:from-xml), verify-tex.mjs (tex:verify)
+scripts/                  site tools: verify-tex.mjs (tex:verify); musicxml2tex.py is a symlink into the skill
 .agents/skills/
-  uke-scoregen/           project skill: notation → score, ships its own scripts/scoregen.py
+  uke-scoregen/           project skill (one self-contained package): notation → score, ships scoregen.py + musicxml2tex.py
+  bitmap-to-svg-replica/  pixel-faithful bitmap → SVG tracing, then rig + normalise into animation skeletons
+  svg-character-motion/   engineering conventions and pitfalls for skeleton → deterministic motion engine
+  disney-animation-rule-skill/  the 12 animation principles turned into executable rules
 CONTEXT.md                domain glossary (read this before changing code)
 ```
 
 Skills live for real in **`.agents/skills/`** (that folder is committed); WorkBuddy's discovery
 path `.workbuddy/skills/<name>` is a **symlink** pointing at it (`.workbuddy` is in `.gitignore`).
-`.agents/skills/uke-scoregen/scripts/scoregen.py` locates `scripts/musicxml2tex.py` by walking
-upwards, so moving the script around never breaks the link.
+Every skill is a self-contained package (its scripts live only inside its own folder), so moving
+the whole folder never breaks anything; `uke-scoregen`'s `musicxml2tex.py` is also used by
+`pnpm tex:from-xml`, which is why `scripts/` keeps a symlink to it.
 
 ## Configuration
 
@@ -178,7 +184,7 @@ When a score doesn't name an instrument, alphaTab defaults to **25 = steel-strin
 - **[docs/alphatex.md](docs/alphatex.md)** — the alphaTex cheat-sheet: the only score format here, every rule tested against the real parser.
 - **[docs/score-spec.md](docs/score-spec.md)** — the numbered-notation spec: how to write a song from scratch (`python3 .agents/skills/uke-scoregen/scripts/scoregen.py`).
 - **[docs/musicxml-sources.md](docs/musicxml-sources.md)** — where to find scores: source tiers, licensing, 20 real files tested.
-- **[docs/adr/](docs/adr/)** — 10 architecture decision records:
+- **[docs/adr/](docs/adr/)** — 12 architecture decision records:
 
   | ADR | Subject |
   | --- | --- |
@@ -192,6 +198,8 @@ When a score doesn't name an instrument, alphaTab defaults to **25 = steel-strin
   | [0008](docs/adr/0008-uke-keyboard-and-portrait-one-screen.md) | Key mapping, portrait layout, one-screen fit |
   | [0009](docs/adr/0009-uke-timbre-and-synth-fx.md) | Timbre and output FX chain (nylon guitar + low-pass reverb) |
   | [0010](docs/adr/0010-timbre-and-fx-for-all-players.md) | Extending timbre and FX to all three players |
+  | [0011](docs/adr/0011-home-cat-motion-engine.md) | The home-page cats: traced art → skeleton → deterministic motion engine |
+  | [0012](docs/adr/0012-motion-art-as-svg-files.md) | Skeleton geometry moves out into SVG files; the data module keeps metadata only |
 
 Working convention: **read before you edit** — several files in this repo have been hand-tuned — and keep code comments and `CONTEXT.md` in sync with your change.
 

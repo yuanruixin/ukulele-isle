@@ -1,48 +1,44 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-简谱文本 → 站点谱面（alphaTex）或 MusicXML（屿琴项目）
+简谱文本 → alphaTex 谱面（score.tex）或 MusicXML
 
-**这个脚本是 `uke-scoregen` 技能的一部分**，所以它住在技能目录里
-（`.agents/skills/uke-scoregen/scripts/`），而不是仓库的 `scripts/`。
+**这个脚本是 `uke-scoregen` 技能的一部分**，住在技能目录的 `scripts/` 下；
 说明与用法见同目录上一级的 `SKILL.md`。
 
-它是 `scripts/musicxml2tex.py` 的**上游**：那个负责「外部谱面转进来」，
-这个负责「从零写一首」。链路是同一条：
+它与同目录的 `musicxml2tex.py`（MusicXML → alphaTex 转换器）配成一条链路：
+那个负责「外部谱面转进来」，这个负责「从零写一首」。
 
     melody.txt（简谱）
-        ├─ --format musicxml ──→ songs/<id>/<id>.musicxml    （给 MuseScore 等）
-        └─ --format tex ───────→ songs/<id>/score.tex         （站点直读）
+        ├─ --format musicxml ──→ <目录名>.musicxml   （给 MuseScore 等）
+        └─ --format tex ───────→ score.tex           （alphaTab 直读）
                  └─ 内部先把 MusicXML 写到临时文件，再交给 musicxml2tex.py
                     ⇒ 两种输出**结构上保证一致**，不会出现「tex 对、xml 错」
 
-⚠️ `musicxml2tex.py` **不**搬进技能目录：它是仓库的共享工具，
-`pnpm tex:from-xml` 也用它。本脚本靠 `find_converter()` 向上找过去。
-
 为什么要有它
 ------------
-站点的谱面格式是 alphaTex（ADR 0002），但 alphaTex 是给机器看的东西：
-`8.1 5.1 3.1` 这种串既难写也难核对。而中文世界描述旋律的通用语言是**简谱**——
-把简谱数字直接敲进来，才是「加一首歌」最自然的入口。
+alphaTex 是给机器看的东西：`8.1 5.1 3.1` 这种串既难写也难核对。
+而中文世界描述旋律的通用语言是**简谱** ——
+把简谱数字直接敲进来，才是「从零写一首歌」最自然的入口。
 
 适用范围（刻意划窄）
 --------------------
 **只做单旋律**：一行简谱数字 + 可选一行歌词。覆盖民歌、童谣、单音指弹、前奏 riff。
-和弦、多声部、技巧记号（击勾弦/滑音/扫弦）请走 `pnpm tex:from-xml`（先用 MuseScore 之类排好再转）。
+和弦、多声部、技巧记号（击勾弦/滑音/扫弦）请先用 MuseScore 之类排好，
+再用同目录的 `musicxml2tex.py` 转进来（它会把谱面转成同一种 alphaTex）。
 
 用法
 ----
-    # 默认读 songs/<id>/melody.txt，输出 songs/<id>/score.tex
-    python3 .agents/skills/uke-scoregen/scripts/scoregen.py songs/molihua
-    python3 .agents/skills/uke-scoregen/scripts/scoregen.py songs/molihua --format musicxml
-    python3 .agents/skills/uke-scoregen/scripts/scoregen.py songs/molihua --format both
+    # 指一个目录：读 <目录>/melody.txt，输出 <目录>/score.tex
+    python3 scripts/scoregen.py path/to/song
+    python3 scripts/scoregen.py path/to/song --format musicxml
+    python3 scripts/scoregen.py path/to/song --format both
 
-    # 也可以直接指一个 spec 文件；不写 -o 时输出到它旁边
-    python3 .agents/skills/uke-scoregen/scripts/scoregen.py songs/molihua/melody.txt --format tex
+    # 也可以直接指 spec 文件；不写 -o 时输出到它旁边
+    python3 scripts/scoregen.py path/to/song/melody.txt --format tex
 
-spec 语法见 `docs/score-spec.md`；可跑的样例：`songs/molihua/melody.txt`。
-生成后**务必**跑 `pnpm tex:verify`——本脚本只保证文本自洽，真实解析由 alphaTab 说了算。
-（本脚本没有 `package.json` 脚本，别去找 `pnpm run score:gen` —— 那个不存在。）
+melody.txt 的语法见 `SKILL.md` §2（速查）+ §8（静默出错清单）；
+生成后请用**真实 alphaTab 引擎**再解析核对一遍 —— 本脚本只保证文本自洽。
 """
 
 from __future__ import annotations
@@ -85,7 +81,7 @@ DURATION_TYPES: list[tuple[float, str, int]] = [
 DEFAULT_TIME = (4, 4)
 DEFAULT_TEMPO = 120.0
 DEFAULT_TUNING = "a4 e4 c4 g4"
-DEFAULT_INSTRUMENT = 24  # GM 24 = 尼龙吉他，与 src/config/site.config.ts 的 SITE_INSTRUMENT 一致
+DEFAULT_INSTRUMENT = 24  # GM 24 = 尼龙吉他（尤克里里常用音色）
 
 # 顶层键。块内出现 `键:` 不会误判，因为只有**行首不缩进**且名字在这个集合里才算键。
 SCALAR_KEYS = {"title", "artist", "key", "octave", "tempo", "tuning", "instrument", "maxfret", "time"}
@@ -100,19 +96,18 @@ NOTE_RE = re.compile(
 
 
 # ---------------------------------------------------------------------------
-# 复用 musicxml2tex（同一项目内的兄弟脚本）
+# 复用音乐转换器（与 musicxml2tex.py 的进程内复用）
 # ---------------------------------------------------------------------------
 
 
 def find_converter() -> Path:
-    """定位仓库里的 `scripts/musicxml2tex.py`。
+    """定位 `musicxml2tex.py`。
 
-    按顺序找：① 与本脚本同目录（万一有人把两个脚本放一起）→ ② 从本脚本所在目录逐级向上，
-    在每一级的 `scripts/` 里找。
+    技能是自洽的：它就在**本脚本旁边**（候选 ①），所以正常安装完直接就能跑。
+    候选 ② 是留给「把转换器单独放在工程的 `scripts/` 下」这种布局的兜底。
 
-    ⚠️ 不要把相对层数写死。本脚本已经从 `scripts/` 挪到
-    `.agents/skills/uke-scoregen/scripts/`，写死 `parent / "musicxml2tex.py"` 会直接失效；
-    再挪一次还会失效。向上找是唯一不会因为搬家而断的做法。
+    ⚠️ 不要把相对层数写死。本脚本搬过一次目录，写死 `parent / "musicxml2tex.py"`
+    当场就失效了；再挪一次还会失效。所以是「先找旁边，再逐级向上找 scripts/」。
     """
     here = Path(__file__).resolve().parent
     candidates = [here / "musicxml2tex.py"]
@@ -121,7 +116,7 @@ def find_converter() -> Path:
         if c.is_file():
             return c
     raise SystemExit(
-        "找不到 musicxml2tex.py —— 它在仓库的 scripts/ 下，是本脚本的必经环节。\n"
+        "找不到 musicxml2tex.py —— 它是本技能的必经环节，正常应与 scoregen.py 同目录。\n"
         "  找过这些位置：\n" + "\n".join("    " + str(c) for c in candidates)
     )
 
@@ -435,7 +430,7 @@ def assign_fingerings(spec: Spec, strings: list[int], divisions: int, m2t) -> li
        被当作「同时发声的和弦」，会在同弦撞车时 +100 惩罚。一次喂 8 个连续音，
        第 2 个音起全被当成撞车，算出来的是垃圾。
     2. **不能自己复刻一份把位算法**，就用 `musicxml2tex.py` 里那一个：
-       站点的谱面是它算的，这里也是它算的，否则「先生成 xml 再转 tex」会得到两套把位。
+       同一份把位算法两头共用，否则「先生成 xml 再转 tex」会得到两套指法。
     """
     notes = []
     for bar in spec.melody:
@@ -475,8 +470,8 @@ def build_musicxml(spec: Spec, notes: list, divisions: int, m2t) -> ET.Element:
         si = ET.SubElement(sp, "score-instrument", {"id": "P1-I1"})
         ET.SubElement(si, "instrument-name").text = "Ukulele"
         mi = ET.SubElement(sp, "midi-instrument", {"id": "P1-I1"})
-        # ⚠️ MusicXML 的 <midi-program> 是 **1 基**，而 GM 号（以及本站 site.config）
-        #    是 0 基。差一就变成隔壁音色，而且不会报错。
+        # ⚠️ MusicXML 的 <midi-program> 是 **1 基**，而 GM 号是 0 基。差一就变成
+        #    隔壁音色，而且不会报错。
         ET.SubElement(mi, "midi-program").text = str(spec.instrument + 1)
 
     part = ET.SubElement(root, "part", {"id": "P1"})
@@ -503,9 +498,8 @@ def build_musicxml(spec: Spec, notes: list, divisions: int, m2t) -> ET.Element:
             # 这里按 **line 1 = 弦号最大那根**（尤克里里 = 4 弦 G4）写。依据两条：
             #   1. alphaTab 读 MusicXML 时用 `tuning[弦数 − line]`，而它的
             #      `tuning[0]` 是第 1 弦 ⇒ line 1 必须落在弦号最大的那根。
-            #      本站的校验权威是 alphaTab，就按它的约定来（真 alphaTab 解析在
-            #      `pnpm tex:verify` 里跑）。
-            #   2. 项目既有谱面也这么写（见 git 历史里的 senbonzakura / molihua）。
+            #      校验权威是 alphaTab，就按它的约定来（拿真引擎解析一遍复核）。
+            #   2. 与 `musicxml2tex.py` 写出 tex 时的口径一致 ⇒ 两边不会互相打架。
             # ⚠️ 所以是**倒着**取 `strings`，不是 `sorted(strings)` —— GCEA 是回归定弦，
             #    音高序 ≠ 弦号序，`sorted()` 会把 2 弦和 4 弦对调。
             # 写完还会 `audit_tuning()` 把定弦读回来跟 spec 对一遍，见 main()。
@@ -581,7 +575,7 @@ def audit_tuning(ps, strings: list[int], m2t) -> str | None:
     """把刚写出的 MusicXML 用**转换器自己的方向判定**读回来，跟 spec 里的定弦对一遍。
 
     为什么要多这一步：`<staff-tuning line>` 写反时**没有任何报错**，只是整首移调
-    （本站真的踩过，见 NOTES 的「头号风险」）。让同一套判定逻辑回头读一遍自己写的东西，
+    （实测踩过）。让同一套判定逻辑回头读一遍自己写的东西，
     是唯一能自动抓到这类错的办法。返回 None = 没问题，否则返回一句人话。
     """
     got = m2t.resolve_tunings(ps, "auto", None, quiet=True)
@@ -625,12 +619,12 @@ def resolve_paths(target: str) -> tuple[Path, Path, Path]:
 
 def main() -> None:
     ap = argparse.ArgumentParser(
-        description="简谱文本 → alphaTex / MusicXML（屿琴）",
+        description="简谱文本 → alphaTex / MusicXML",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     ap.add_argument("target", help="歌曲目录（读其中的 melody.txt）或直接给 spec 文件")
     ap.add_argument("-f", "--format", choices=["tex", "musicxml", "both"], default="tex",
-                    help="生成哪种（默认 tex = 站点直读的格式）")
+                    help="生成哪种（默认 tex = alphaTab 直读的格式）")
     ap.add_argument("-o", "--output", help="覆盖输出路径（只在单格式时有意义）")
     ap.add_argument("--print", dest="to_stdout", action="store_true", help="同时把 tex 打到 stdout")
     ap.add_argument("--ragged", action="store_true",
@@ -684,7 +678,7 @@ def main() -> None:
     if src is not None:
         write_musicxml(root, src)
         # 回读自检：把这份 MusicXML 当成「外部谱面」再读一遍，确认定弦没被写歪。
-        # 定弦写反是本站唯一会**静默出错**的坑（整首移调、零报错），宁可在这里炸。
+        # 定弦写反是这套链路里唯一会**静默出错**的坑（整首移调、零报错），宁可在这里炸。
         ps = m2t.parse_musicxml(str(src))
         problem = audit_tuning(ps, strings, m2t)
         if problem:
@@ -727,7 +721,8 @@ def main() -> None:
             print(f"  ✓ MusicXML → {xml_out}", file=sys.stderr)
         if wrote_tex and tex_out:
             print(f"  ✓ alphaTex → {tex_out}", file=sys.stderr)
-        print("  → 别忘了跑 `pnpm tex:verify` 复核", file=sys.stderr)
+        print("  → 别忘了拿真实 alphaTab 引擎解析一遍复核（本脚本只保证文本自洽）",
+              file=sys.stderr)
 
 
 if __name__ == "__main__":

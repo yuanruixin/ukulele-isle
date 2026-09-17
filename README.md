@@ -76,27 +76,32 @@ src/
   pages/                  7 个页面
   components/             组件（chords / tuner / uke / icons 等分子目录）
   hooks/                  播放器与音频接线（useSynthFx / useTuner / useChordPlayer / useUkulelePlayer / useUkuleleRecording）
-  lib/                    与页面无关的纯逻辑（synthFx / pitch / chord / ukulele / ukeKeys / songTex）
+  lib/                    与页面无关的纯逻辑（synthFx / pitch / chord / ukulele / ukeKeys / songTex / catMotion）
+  data/                   小猫骨架**元数据**（cats.ts，生成物）+ 手写的几何投递层（catArt.ts）
+  assets/cats/*.svg       小猫骨架**几何**（生成物，一个姿态一个文件，可读可 diff）
   store/                  Zustand：themeStore / playerStore
   songs/index.ts          构建时扫描 songs/ 生成歌曲索引
 public/
   font/  images/  soundfont/  icons/
 docs/
-  adr/                    10 篇架构决策记录
+  adr/                    12 篇架构决策记录
   images/                 README 截图
   alphatex.md             alphaTex 语法速查
   score-spec.md           简谱 spec 语法（配合 python3 .agents/skills/uke-scoregen/scripts/scoregen.py）
   musicxml-sources.md     上哪儿找谱面（来源分级 / 版权）
-scripts/                  项目共享工具：musicxml2tex.py（tex:from-xml）、verify-tex.mjs（tex:verify）
+scripts/                  站点工具：verify-tex.mjs（tex:verify）；musicxml2tex.py 是技能里那份的软链
 .agents/skills/
-  uke-scoregen/           项目级技能：简谱 → 谱面，自带 scripts/scoregen.py
+  uke-scoregen/           项目级技能（自洽一整包）：简谱 → 谱面，自带 scoregen.py + musicxml2tex.py
+  bitmap-to-svg-replica/  位图逐像素描摹成 SVG，再拆件 + 归一化成动画骨架（SVG 文件 + 元数据）
+  svg-character-motion/   骨架 → 确定性动效引擎的工程约定与坑
+  disney-animation-rule-skill/  12 条动画准则 → 可执行规则
 CONTEXT.md                领域术语表（改代码前先读）
 ```
 
 技能的真身放在 **`.agents/skills/`**（这个目录进 git）；WorkBuddy 的发现路径
 `.workbuddy/skills/<name>` 是一条**软链接**指过去（`.workbuddy` 已在 `.gitignore` 里）。
-`.agents/skills/uke-scoregen/scripts/scoregen.py` 靠向上查找定位 `scripts/musicxml2tex.py`，
-所以脚本搬位置不会断。
+每个技能都是自洽的一包（脚本只住自己目录），所以整包搬走不会断；
+`uke-scoregen` 的 `musicxml2tex.py` 同时被 `pnpm tex:from-xml` 用，`scripts/` 下留的是软链。
 
 ## 配置
 
@@ -177,7 +182,7 @@ alphaTab 在谱面未指定音色时默认给 **25 = 钢弦吉他**，而尤克�
 - **[docs/alphatex.md](docs/alphatex.md)** —— alphaTex 语法速查：本站唯一谱面格式，每条都跑过真解析器。
 - **[docs/score-spec.md](docs/score-spec.md)** —— 简谱 spec 语法：从零写一首歌的入口（`python3 .agents/skills/uke-scoregen/scripts/scoregen.py`）。
 - **[docs/musicxml-sources.md](docs/musicxml-sources.md)** —— 上哪儿找谱面：来源分级、版权规则、20 份真实谱面实测。
-- **[docs/adr/](docs/adr/)** —— 10 篇架构决策记录：
+- **[docs/adr/](docs/adr/)** —— 12 篇架构决策记录：
 
   | ADR | 主题 |
   | --- | --- |
@@ -191,6 +196,8 @@ alphaTab 在谱面未指定音色时默认给 **25 = 钢弦吉他**，而尤克�
   | [0008](docs/adr/0008-uke-keyboard-and-portrait-one-screen.md) | 键盘映射、移动端竖置与一屏展示 |
   | [0009](docs/adr/0009-uke-timbre-and-synth-fx.md) | 音色与输出效果链（换尼龙吉他 + 低通混响） |
   | [0010](docs/adr/0010-timbre-and-fx-for-all-players.md) | 音色与效果链推广到全站三个播放器 |
+  | [0011](docs/adr/0011-home-cat-motion-engine.md) | 首页那排小猫：描摹稿 → 骨架 → 确定性动效引擎 |
+  | [0012](docs/adr/0012-motion-art-as-svg-files.md) | 骨架几何外置成 SVG 文件，数据模块只留元数据 |
 
 开发约定：**先读再改**（本仓库手工调整过的文件不少），改完把代码注释与 `CONTEXT.md` 一起同步。
 

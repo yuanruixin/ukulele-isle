@@ -320,3 +320,81 @@ body {
     opacity: 0;
   }
 }
+
+/* ═══════════════════════ 首页那排小猫（组件 CatMotion） ═══════════════════════
+   引擎（src/lib/catMotion/engine.ts）**只建节点、不注入样式**，它产出的节点就这些：
+     .cat 每只猫的盒子 · .pose 一个姿态的画面（带 .on 的才显示）· .fx 里的 .shadow/.dust/.poof
+   所以这套规则补齐的是「引擎的 DOM 契约」，不是页面布局 —— 页面布局（宽度、居中、间距）
+   一律用 Tailwind class 写在组件里。
+   ⚠️ 与全站同一条约定：这里是非分层 CSS，优先级高于 utilities，别再在这里写会被
+      Tailwind class 覆盖的布局属性。 */
+.cat-motion {
+  /* 高度由组件用行内 CSS 变量给（值来自 siteConfig.cats.height / heightMobile）：
+     宽窄两档直接交给媒体查询，省掉一个 matchMedia 监听与一次重渲染 */
+  height: var(--cat-h-sm);
+}
+
+@media (min-width: 640px) {
+  .cat-motion {
+    height: var(--cat-h);
+  }
+}
+
+.cat-motion .cat {
+  /* ★ 四只**等分**父容器宽度 + min-width:0 ⇒ 无论多窄都不会横溢出；
+     盒宽够时 svg 按自己的比例取自然宽（width:auto），不够时由 max-width:100% 压回来，
+     四只压得一模一样，所以脚下的地面线始终齐平 */
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  /* 点一下不要 iOS 那块灰色高亮（装饰性元素上很破坏观感） */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 能点的那些才给手型：引擎会给可交互的盒子挂 data-clickable（它不注入样式，只标事实） */
+.cat-motion .cat[data-clickable] {
+  cursor: pointer;
+}
+
+.cat-motion .cat .pose {
+  display: none;
+  height: 100%;
+  pointer-events: none; /* 事件由 .cat 收（一只猫 = 一个命中区） */
+}
+
+.cat-motion .cat .pose.on {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.cat-motion .cat svg {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  overflow: visible; /* 起跳、扬尘会伸出取景框，别裁掉 */
+}
+
+/* 点缀色由引擎写在 .fx 上（--fx / --fx2）；透明度由引擎逐帧写行内 style，
+   这里只需要给个初值，免得挂载后的第一帧闪一下满血不透明度 */
+.cat-motion .fx .shadow {
+  fill: var(--fx);
+  stroke: none;
+}
+
+.cat-motion .fx .dust {
+  fill: none;
+  stroke: var(--fx);
+  stroke-linecap: round;
+  opacity: 0;
+}
+
+.cat-motion .fx .poof {
+  fill: var(--fx2);
+  opacity: 0;
+}
+

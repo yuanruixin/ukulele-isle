@@ -1,9 +1,16 @@
 import { Link } from "react-router-dom";
 import { songs } from "../songs";
 import { siteConfig } from "../config/site.config";
+import CatMotion from "../components/cats/CatMotion";
 
-/** 首页：叙事区（站点名 + 副标题）+ 曲谱库 / 工具 入口卡片 */
+/**
+ * 首页：叙事区（站点名 + 副标题 + 一排小猫）+ 曲谱库 / 工具 入口卡片。
+ *
+ * 小猫是纯装饰（把鼠标放上去会抬身歪头，点一下朝你点的地方跳一步）；
+ * 要在首页去掉它，把 siteConfig.cats.enabled 改成 false 即可，这里一行都不用动。
+ */
 export default function HomePage() {
+  const { enabled: catsOn } = siteConfig.cats;
   return (
     <main className="mx-auto max-w-4xl px-5 pb-24">
       <section className="py-14 text-center sm:py-20">
@@ -11,6 +18,7 @@ export default function HomePage() {
           {siteConfig.siteName}
         </h1>
         <p className="text-secondary mt-3 text-lg">{siteConfig.tagline}</p>
+        {catsOn && <CatMotion className="mt-9 sm:mt-12" />}
       </section>
 
       <section className="mx-auto grid max-w-2xl gap-4 sm:grid-cols-2">

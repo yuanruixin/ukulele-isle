@@ -2,6 +2,8 @@
  * ★ 站点配置 —— 所有站点级可调项集中在这里修改 ★
  */
 
+import type { CatPoseId } from "../data/cats";
+
 /**
  * ★ 工具卡片的图标名。
  *   可选值 = `src/components/icons/index.tsx` 里 `TOOL_ICONS` 的键。
@@ -89,6 +91,41 @@ export const siteConfig = {
   siteName: "屿琴",
   /** 站点副标题 */
   tagline: "四根弦上的晴天",
+
+  /**
+   * ★ 首页那排小猫（站点名底下那排装饰，见 src/components/cats/CatMotion.tsx）。
+   *   造型来自手绘位图的**逐像素描摹**（一字未改形）：骨架是一个姿态一个的
+   *   `src/assets/cats/<id>.svg`，元数据在 `src/data/cats.ts`（都是生成物）；
+   *   动作由迪士尼 12 条动画准则推导，引擎在 `src/lib/catMotion/engine.ts`。
+   *
+   *   ⚠️ 这里只管「首页要不要、摆哪几只、多大」。
+   *   「动作怎么演」（跳跃高度、踩拍深度、呼吸周期、拖尾量…）全在引擎顶部的
+   *   CAT_CONFIG 里，别往这里搬 —— 那边是工艺参数，这边是站点开关。
+   */
+  cats: {
+    /** ★ 首页要不要这排猫（false = 首页完全不出现，一行代码都不用改） */
+    enabled: true,
+    /**
+     * ★ 摆哪几只、从左到右（可选值见 `src/data/cats.ts` 的 CAT_ORDER，写错编译期就报）。
+     *   - listen 听歌（头顶冒音符）
+     *   - sing   唱歌（手拿麦克风，踩拍最重）
+     *   - curl   蜷着（头顶冒 Zzz）
+     *   - sleep  睡觉（躺着，被点会惊醒而不是跳）
+     *   写几只有几只；写空数组 = 不显示。
+     */
+    poses: ["listen", "sing", "curl", "sleep"] as CatPoseId[],
+    /**
+     * ★ 这排猫的高度（px）。四只猫按**同一个身体高**归一化过，所以给一个高度就是齐的。
+     *   改大改小只动取景框，猫本身不会变形。
+     */
+    height: 132,
+    /** ★ 窄屏（<640px）时的高度（px）：四只挤在手机宽度里，矮一档才不显局促 */
+    heightMobile: 98,
+    /** ★ 节拍 BPM：听歌 / 唱歌那两只的踩拍沉浮与张嘴都跟它走（96 ≈ 中速民谣） */
+    bpm: 96,
+    /** ★ 是否响应指针（悬停抬身 + 歪头看你的手指 + 点一下朝那边跳一步）；关掉 = 纯装饰 */
+    interactive: true,
+  },
 
   /** ★ 外观（亮 / 暗模式） */
   theme: {

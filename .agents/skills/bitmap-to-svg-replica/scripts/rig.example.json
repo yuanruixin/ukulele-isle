@@ -1,0 +1,28 @@
+{
+  "order": ["idle", "wave"],
+  "labels": { "idle": "待机", "wave": "挥手" },
+
+  "targetBodyH": 190,
+  "traced": "traced",
+  "out": "out",
+  "svg": "svg",
+
+  "global": "CHARACTERS",
+  "js": null,
+  "ts": null,
+  "tsTypes": null,
+  "tsNames": "PoseId,ORDER,DATA",
+  "tsDataType": "MotionData",
+
+  "stage": { "padX": 16, "headroom": 92, "thumbPadY": 8, "thumbPadTop": 52 },
+
+  "parts": {
+    "idle": {
+      "eyes": { "parts": ["L1C0", "L1C1"], "anchor": "center", "scope": "each" },
+      "hair": { "parts": ["L2C0"], "anchor": "top", "scope": "group" }
+    },
+    "wave": {
+      "hand": { "parts": ["L1C0"], "anchor": "bottom", "scope": "group" }
+    }
+  }
+}

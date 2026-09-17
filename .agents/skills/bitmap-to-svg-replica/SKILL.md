@@ -23,29 +23,40 @@ agent_created: true
 
 ## 位置 / 怎么调
 
-真身在本仓库 **`.agents/skills/bitmap-to-svg-replica/`**（进 git）；
-`.workbuddy/skills/bitmap-to-svg-replica` 是指向它的相对软链（`.workbuddy` 在 `.gitignore` 里）。
-`scripts/` 下的 `trace-image.py` / `trace-cats.sh` / `build-replica-page.py` **也是指向这里的软链**，
-所以在项目根直接 `scripts/xxx` 调用即可 —— 只有一份真身，不存在改一处忘一处。
+技能自带全部脚本，就在本目录的 `scripts/` 下 —— 装完即可用，**不依赖任何宿主工程**：
+
+```
+scripts/trace-image.py          单张描摹
+scripts/trace-batch.example.sh  批量模板（抄一份改成自己的）
+scripts/build-replica-page.py   三列对照验收页
+scripts/rig-parts.py            拆件（见「下一步」）
+scripts/build-motion-data.py    骨架 **SVG 文件** + 元数据（见「下一步」）
+```
+
+唯一外部依赖是 python 包：`pillow numpy scipy scikit-image`
+（`python3 -m pip install pillow numpy scipy scikit-image`）。
+脚本都是纯 python、与包管理器无关，`PY` 指到任何装了上述依赖的解释器即可：
 
 ```bash
-PY=/Users/ewan/.workbuddy/binaries/python/envs/default/bin/python   # 需 pillow numpy scipy scikit-image
+PY="${PY:-python3}"          # 虚拟环境里就写 .venv/bin/python
 
 # 单张
 $PY scripts/trace-image.py <原图.png> <输出.svg> \
     --palette "#ffffff,#060606,#8d8d8d" --tol 1.8 --scale 2 --crop
 
-# 批量：把每个项目的参考图配置写成一个 trace-cats.sh 那样的脚本（调色板按图写死）
-bash scripts/trace-cats.sh [参考图目录] [输出目录]     # 默认 ~/.workbuddy/clipboard-images → docs/preview/traced
+# 批量：抄 scripts/trace-batch.example.sh（每张图的调色板写死，调色板按图量，见坑 2）
+bash scripts/trace-batch.example.sh
 
 # 验收页：原图 / 复刻(浅底) / 复刻(深色主题) 三列并排
-$PY scripts/build-replica-page.py                      # 需在项目根跑，产物进 docs/preview/
+$PY scripts/build-replica-page.py --in <原图目录> --traced <描摹目录> -o out/replica.html
 ```
 
-搬到别的项目复用时：把整个技能目录拷到那个项目的 `.agents/skills/` 下，
-再 `ln -s ../../.agents/skills/bitmap-to-svg-replica .workbuddy/skills/` 即可。
+输入与输出**全部走参数**，脚本不假定你站在哪个目录（各脚本 `--help` 里有默认值）。
 
-## 四个坑（全是实测踩出来的，按踩到的顺序）
+## 四个坑（描摹本身的，全是实测踩出来的，按踩到的顺序）
+
+> 拆件/归一化/动效那一段另有三个坑（嵌套孔洞、`<g norm>` 归一化、舞台单位与原始单位差一个 scale），
+> 见下面的「下一步：拆件 → 让它动起来」。
 
 ### 1. 抗锯齿过渡带会自己长成"一层色"
 
@@ -133,10 +144,66 @@ n_orig = (content & (lum < mid)).sum()
 
 实测这样在深色底上白线稿、彩色点缀（腮红、蓝 Z）都成立。
 
+## 下一步：拆件 → 让它动起来
+
+描摹稿天生是「一叠按颜色分层的 `<path>`」，可以直接当**动画骨架**用。
+这一步由 **`scripts/rig-parts.py`**（拆件）+ **`scripts/build-motion-data.py`**（语义标注 + 归一化）做，
+引擎与交互约定见技能 **`svg-character-motion`**（本技能只管几何）。
+
+```bash
+$PY scripts/rig-parts.py <描摹.svg> out/rig.svg        # 冒烟：打印部件清单
+$PY scripts/build-motion-data.py --rig rig.json --traced <描摹目录> --out out
+# → out/<id>.svg   带 data-part / 枢轴的骨架（几何一字未动）
+# → out/data.js    统一舞台坐标系 + 语义部件表（挂 window.CHARACTERS，名字可 --global 改）
+```
+
+`rig.json` 是**每套角色一份**的语义部件表（哪个部件是「眼睛」「音符」、以包围盒的哪条边为枢轴）
+—— 格式见 `scripts/rig.example.json`。它必然与你的画绑定，所以**由使用者放在自己的工程里**，不进技能。
+
+### 5. 子路径是**嵌套**的：拆件会把孔洞填实
+
+一个色层的 `d` 里同时有外轮廓、内部孔洞、独立内件，靠 `fill-rule="evenodd"`
+按嵌套奇偶填充。天真地按 `M` 切开成独立 `<path>` ⇒ **孔洞全被填成实心**。
+
+正解是射线法算嵌套深度：偶数深度 = 实体件，奇数深度 = 孔洞，
+孔洞挂到「包含它的、深度恰好小 1 的、面积最小的那个父件」上，
+每个部件自己带 `fill-rule="evenodd"`。
+
+⚠️ 切子路径只能按 **`M`/`m`** 切 —— 按每个命令字母切会产生上百个假子路径
+（实测 207 个）并让后续采样直接崩。
+
+验收：拆件前后的渲染像素差**只应有沿边缘的抗锯齿缝**
+（实测 0.046%，最大簇 29px、74.8% ≤4px）。
+出现成块差异就是孔洞填实了，别当成抗锯齿放过去。
+
+### 6. 归一化：套一层 `<g transform>`，绝不改 `d`
+
+多个角色要用同一套动作时，得先统一坐标系（同一比例、同一落点）。
+**不要重写路径数据** —— 在 `<svg>` 里直接套一层：
+
+```xml
+<g class="norm" transform="translate(-body_cx*s -by1*s) scale(s)">
+   …原本的色层 <g data-layer="…">…</g>…
+</g>
+```
+
+`s = 目标身高 / 身体剪影高`，平移把**身体底边中线**送到原点 ⇒ 原点 = 地面接触点。
+好处：原坐标逐字节保留、可回归校验；坏处要记住：
+**部件枢轴仍必须用原始坐标**（部件变换写在 `norm` 组**里面**），
+而幅度是「身体高的比例」、换算要用**该角色自己的 `bodyH` / `scale`**（见下一条）。
+
+### 7. 舞台单位 ↔ 原始单位差一个 `scale`
+
+舞台单位给整体运动（`translate`/`rotate`/`scale` 写在 `rig` 上），
+原始单位给部件变换（写在 `norm` 里面）。两者之间是 `× scale` 与 `÷ scale`。
+实测踩过的坑：把舞台单位的位移直接当原始单位喂给部件 ⇒ 身宽不同的角色
+拖尾幅度差好几倍。另外记得在数据里一并算好 **`bodyW`**（身体在舞台单位下的宽度），
+点击方向/指针跟随都靠它归一化。
+
 ## 交付
 
 一定要给用户一张**三列对照页**（原图 / 复刻·浅底 / 复刻·深色主题），
 再附上每张的体积。用户是在跟原图逐项比对，并排是对比的前提 ——
-`scripts/build-replica-page.py` 直接生成。
+`scripts/build-replica-page.py --in <原图目录> --traced <描摹目录> -o out/replica.html` 直接生成。
 
 复刻通过验收之后，才进入"接进站点"那一步（改组件、加配置、主题映射表）。

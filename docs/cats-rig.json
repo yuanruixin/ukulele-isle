@@ -1,0 +1,43 @@
+{
+  "order": ["listen", "sing", "curl", "sleep"],
+  "labels": { "listen": "听歌", "sing": "唱歌", "curl": "蜷缩", "sleep": "睡觉" },
+
+  "targetBodyH": 190,
+  "traced": "preview/traced",
+  "out": "preview/rigged",
+  "svg": "../src/assets/cats",
+
+  "global": "CATS",
+  "ts": "../src/data/cats.ts",
+  "tsTypes": "../types/cat",
+  "tsNames": "CatPoseId,CAT_ORDER,CATS",
+  "tsDataType": "CatsData",
+
+  "stage": { "padX": 16, "headroom": 92, "thumbPadY": 8, "thumbPadTop": 52 },
+
+  "parts": {
+    "listen": {
+      "notes": { "parts": ["L2C0", "L2C1", "L2C2"], "anchor": "center", "scope": "each" },
+      "eyes": { "parts": ["L1C0", "L1C1"], "anchor": "center", "scope": "each" },
+      "mouth": { "parts": ["L1C2"], "anchor": "top", "scope": "group" }
+    },
+    "sing": {
+      "mouth": { "parts": ["L1C0"], "anchor": "top", "scope": "group" },
+      "mic": {
+        "parts": [
+          "L2C0", "L2C1", "L2C2",
+          "L3C0", "L3C1", "L3C2", "L3C3", "L3C4", "L3C5", "L3C6", "L3C7",
+          "L3C8", "L3C9", "L3C10", "L3C11", "L3C12", "L3C13", "L3C14", "L3C15",
+          "L3C16", "L3C17", "L3C18", "L3C19", "L3C20"
+        ],
+        "anchor": "bottom", "scope": "group"
+      }
+    },
+    "sleep": {
+      "zzz": { "parts": ["L2C0", "L2C1", "L2C2", "L2C3", "L2C4"], "anchor": "center", "scope": "each" }
+    },
+    "curl": {
+      "zzz": { "parts": ["L1C0", "L1C2", "L1C3"], "anchor": "center", "scope": "each" }
+    }
+  }
+}

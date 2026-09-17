@@ -1,0 +1,1 @@
+../.agents/skills/bitmap-to-svg-replica/scripts/build-motion-data.py

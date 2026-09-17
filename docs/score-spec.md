@@ -55,13 +55,14 @@ alias scoregen='python3 .agents/skills/uke-scoregen/scripts/scoregen.py'
 ## 2. 东西都放在哪儿
 
 ```
-.agents/skills/uke-scoregen/       ← 技能真身（进 git）
+.agents/skills/uke-scoregen/       ← 技能真身（进 git），**自洽的一整包**
   SKILL.md                         ← 给 AI 用的速查：命令、坑、验收
-  scripts/scoregen.py              ← 本工具。技能专属，所以住在技能目录里
+  scripts/scoregen.py              ← 简谱 → 谱面（本工具）
+  scripts/musicxml2tex.py          ← MusicXML → alphaTex（技能自带，必须与 scoregen 同目录）
 .workbuddy/skills/uke-scoregen     → 软链接到上面（WorkBuddy 的发现路径；.workbuddy 不进 git）
 
-scripts/musicxml2tex.py            ← 共享工具，**不**搬进技能目录：`pnpm tex:from-xml` 也用它
-scripts/verify-tex.mjs             ← 共享工具：`pnpm tex:verify`
+scripts/musicxml2tex.py            → 软链到技能里那一份（`pnpm tex:from-xml` 走它）
+scripts/verify-tex.mjs             ← 站点校验器（真 alphaTab 解析 + 逐音核对）
 
 songs/<id>/
   meta.json        ← 站点的歌曲信息（手写）
@@ -70,8 +71,8 @@ songs/<id>/
   <id>.musicxml    ← 生成物（可选，外部软件用）
 ```
 
-`scoregen.py` 靠**向上查找**定位 `scripts/musicxml2tex.py`（不写死相对层数），
-所以它被挪到哪儿都能跑。调用时给的是 `.agents/` 那条路径（软链接那条也能跑，
+`scoregen.py` 先在**自己旁边**找 `musicxml2tex.py`，找不到才逐级向上找 `scripts/`，
+所以整包搬走也不会断。调用时给的是 `.agents/` 那条路径（软链接那条也能跑，
 但 `.workbuddy/` 不进 git、别人 clone 不到，写文档、写脚本一律用 `.agents/`）。
 
 ⚠️ **软链接是被 WorkBuddy 支持的**（条目是 symlink 也照常加载），但**技能清单在任务创建时就固化了** ——
