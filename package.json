@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "analyze": "vite build --mode analyze",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tex:from-xml": "python3 scripts/musicxml2tex.py",
+    "tex:verify": "node scripts/verify-tex.mjs"
   },
   "dependencies": {
     "@coderline/alphatab": "^1.8.4",

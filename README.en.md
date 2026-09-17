@@ -36,10 +36,10 @@ Also: **light / dark themes** across the site (follows the system on first visit
 
 ## Getting started
 
-Requirements: **Node ≥ 20.19** (the minimum for Vite 7).
+Requirements: **Node ≥ 20.19** (the minimum for Vite 7). Package manager: **pnpm**.
 
 ```bash
-pnpm install        # a pnpm-lock.yaml ships with the repo; npm install works too
+pnpm install      
 pnpm dev            # dev server → http://localhost:5173
 ```
 
@@ -69,7 +69,8 @@ Deployment: `dist/` is plain static output — host it anywhere. Routing uses a 
 ```
 songs/                    Score data — one folder per song
   <id>/meta.json            title / artist / tags / description
-  <id>/score.tex            the alphaTex score
+  <id>/score.tex            the alphaTex score (hand-written, or generated)
+  <id>/melody.txt           optional numbered-notation input (see docs/score-spec.md)
 src/
   config/site.config.ts ★ every site-level knob (appearance / playback / nav / chords / ukulele / tuner)
   pages/                  7 pages
@@ -83,8 +84,19 @@ public/
 docs/
   adr/                    10 architecture decision records
   images/                 README screenshots
+  alphatex.md             alphaTex cheat-sheet
+  score-spec.md           numbered-notation spec (used by python3 .agents/skills/uke-scoregen/scripts/scoregen.py)
+  musicxml-sources.md     where to find scores (source tiers / licensing)
+scripts/                  shared tools: musicxml2tex.py (tex:from-xml), verify-tex.mjs (tex:verify)
+.agents/skills/
+  uke-scoregen/           project skill: notation → score, ships its own scripts/scoregen.py
 CONTEXT.md                domain glossary (read this before changing code)
 ```
+
+Skills live for real in **`.agents/skills/`** (that folder is committed); WorkBuddy's discovery
+path `.workbuddy/skills/<name>` is a **symlink** pointing at it (`.workbuddy` is in `.gitignore`).
+`.agents/skills/uke-scoregen/scripts/scoregen.py` locates `scripts/musicxml2tex.py` by walking
+upwards, so moving the script around never breaks the link.
 
 ## Configuration
 
@@ -115,8 +127,21 @@ The top-level `SITE_INSTRUMENT` (default **24, nylon guitar**) is the instrument
    }
    ```
 
-3. `score.tex`: the alphaTex score. You **don't have to write `\instrument`** — the default instrument is injected in memory at load time (if the score specifies one, it is respected and never overwritten). If you do write it, it **must sit after `.` and before `\tuning`**.
-4. Reload the page — that's it. **No index file to update.**
+3. **Pick one of two ways to get the score**:
+   - **Hand-write `score.tex`** (the alphaTex score): full control, any technique notation you like. You **don't have to write `\instrument`** — the default instrument is injected in memory at load time (if the score specifies one, it is respected and never overwritten). If you do write it, it **must sit after `.` and before `\tuning`**.
+   - **Generate it from numbered notation**: drop a `melody.txt` next to `meta.json` (the notation Chinese-language music uses, plus per-note lyrics) and run one command —
+
+     ```bash
+     python3 .agents/skills/uke-scoregen/scripts/scoregen.py songs/<id>                # → score.tex (read by the site)
+     python3 .agents/skills/uke-scoregen/scripts/scoregen.py songs/<id> -f musicxml    # → <id>.musicxml (for MuseScore etc.)
+     python3 .agents/skills/uke-scoregen/scripts/scoregen.py songs/<id> -f both        # both
+     ```
+
+     Single melody line only (folk songs, nursery rhymes, single-note fingerstyle); chords,
+     multiple voices and hammer-on/slide/sweep go through `tex:from-xml` instead.
+     Syntax: **[docs/score-spec.md](docs/score-spec.md)**; working example: `songs/molihua/melody.txt`.
+4. After generating or editing a score, run `pnpm tex:verify` (real alphaTab parse + per-note check).
+5. Reload the page — that's it. **No index file to update.**
 
 ### Adding a chord
 
@@ -150,6 +175,9 @@ When a score doesn't name an instrument, alphaTab defaults to **25 = steel-strin
 ## Documentation
 
 - **[CONTEXT.md](CONTEXT.md)** — the domain glossary and shared language: score / chord / virtual ukulele / timbre / tuning / pages. **Read it before changing code.**
+- **[docs/alphatex.md](docs/alphatex.md)** — the alphaTex cheat-sheet: the only score format here, every rule tested against the real parser.
+- **[docs/score-spec.md](docs/score-spec.md)** — the numbered-notation spec: how to write a song from scratch (`python3 .agents/skills/uke-scoregen/scripts/scoregen.py`).
+- **[docs/musicxml-sources.md](docs/musicxml-sources.md)** — where to find scores: source tiers, licensing, 20 real files tested.
 - **[docs/adr/](docs/adr/)** — 10 architecture decision records:
 
   | ADR | Subject |

@@ -36,10 +36,10 @@
 
 ## 快速开始
 
-环境要求：**Node ≥ 20.19**（Vite 7 的最低要求）。
+环境要求：**Node ≥ 20.19**（Vite 7 的最低要求）。包管理器：**pnpm**。
 
 ```bash
-pnpm install        # 仓库带 pnpm-lock.yaml；用 npm install 也可以
+pnpm install        
 pnpm dev            # 开发服务器 → http://localhost:5173
 ```
 
@@ -69,7 +69,8 @@ pnpm analyze        # 依赖体积分析 → dist/stats.html（日常 build 不�
 ```
 songs/                    曲谱数据 —— 一首歌一个文件夹
   <id>/meta.json            标题 / 艺术家 / 标签 / 简介
-  <id>/score.tex            alphaTex 谱面
+  <id>/score.tex            alphaTex 谱面（手写，或由 melody.txt 生成）
+  <id>/melody.txt           简谱输入，可选（生成路径见 docs/score-spec.md）
 src/
   config/site.config.ts ★ 站点全部可调项（外观 / 播放 / 入口 / 和弦 / 尤克里里 / 调音器）
   pages/                  7 个页面
@@ -83,8 +84,19 @@ public/
 docs/
   adr/                    10 篇架构决策记录
   images/                 README 截图
+  alphatex.md             alphaTex 语法速查
+  score-spec.md           简谱 spec 语法（配合 python3 .agents/skills/uke-scoregen/scripts/scoregen.py）
+  musicxml-sources.md     上哪儿找谱面（来源分级 / 版权）
+scripts/                  项目共享工具：musicxml2tex.py（tex:from-xml）、verify-tex.mjs（tex:verify）
+.agents/skills/
+  uke-scoregen/           项目级技能：简谱 → 谱面，自带 scripts/scoregen.py
 CONTEXT.md                领域术语表（改代码前先读）
 ```
+
+技能的真身放在 **`.agents/skills/`**（这个目录进 git）；WorkBuddy 的发现路径
+`.workbuddy/skills/<name>` 是一条**软链接**指过去（`.workbuddy` 已在 `.gitignore` 里）。
+`.agents/skills/uke-scoregen/scripts/scoregen.py` 靠向上查找定位 `scripts/musicxml2tex.py`，
+所以脚本搬位置不会断。
 
 ## 配置
 
@@ -115,8 +127,20 @@ CONTEXT.md                领域术语表（改代码前先读）
    }
    ```
 
-3. `score.tex`：alphaTex 文本谱面。**不必写 `\instrument`** —— 加载时会在内存里补上默认音色（谱面自己写了就放行、不覆盖）；若手动写，**必须放在 `.` 之后、`\tuning` 之前**。
-4. 刷新页面即可看到，**无需修改任何索引文件**。
+3. **谱面二选一**：
+   - **手写 `score.tex`**（alphaTex 文本谱面）：完全可控，技巧记号随便写。**不必写 `\instrument`** —— 加载时会在内存里补上默认音色（谱面自己写了就放行、不覆盖）；若手动写，**必须放在 `.` 之后、`\tuning` 之前**。
+   - **从简谱生成**：在同一个目录写 `melody.txt`（中文世界通用的简谱数字 + 逐音歌词），一条命令出谱面 ——
+
+     ```bash
+     python3 .agents/skills/uke-scoregen/scripts/scoregen.py songs/<id>                # → score.tex（站点直读）
+     python3 .agents/skills/uke-scoregen/scripts/scoregen.py songs/<id> -f musicxml    # → <id>.musicxml（给 MuseScore 等）
+     python3 .agents/skills/uke-scoregen/scripts/scoregen.py songs/<id> -f both        # 两份都要
+     ```
+
+     只覆盖**单旋律**（民歌、童谣、单音指弹）；和弦、多声部、击勾弦/滑音走 `tex:from-xml`。
+     语法与限制见 **[docs/score-spec.md](docs/score-spec.md)**，现成例子 `songs/molihua/melody.txt`。
+4. 生成或改完谱面，跑 `pnpm tex:verify` 复核（真 alphaTab 解析 + 逐音核对）。
+5. 刷新页面即可看到，**无需修改任何索引文件**。
 
 ### 添加一个和弦
 
@@ -150,6 +174,9 @@ alphaTab 在谱面未指定音色时默认给 **25 = 钢弦吉他**，而尤克�
 ## 文档
 
 - **[CONTEXT.md](CONTEXT.md)** —— 领域术语与共享语言：曲谱 / 和弦 / 虚拟尤克里里 / 音色 / 调音 / 页面。**改代码前先读它**。
+- **[docs/alphatex.md](docs/alphatex.md)** —— alphaTex 语法速查：本站唯一谱面格式，每条都跑过真解析器。
+- **[docs/score-spec.md](docs/score-spec.md)** —— 简谱 spec 语法：从零写一首歌的入口（`python3 .agents/skills/uke-scoregen/scripts/scoregen.py`）。
+- **[docs/musicxml-sources.md](docs/musicxml-sources.md)** —— 上哪儿找谱面：来源分级、版权规则、20 份真实谱面实测。
 - **[docs/adr/](docs/adr/)** —— 10 篇架构决策记录：
 
   | ADR | 主题 |
