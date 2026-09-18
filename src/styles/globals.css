@@ -29,7 +29,66 @@
   --toggle-icon: #3a3a3c;
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
   --shadow-card-hover: 0 8px 28px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  /**
+   * ★ 吸顶导航栏的高度。首页那一幕要"铺满导航栏以下的整屏"，
+   *   靠的就是 `calc(100dvh - var(--nav-h))` —— 一个数写成两边共用，
+   *   比用 JS 去量 header 稳（量出来是小数，四舍五入差 1px 就会冒滚动条）。
+   *   ⚠️ 这个值必须与 NavBar.tsx 里那行 `h-14`（Tailwind 的 3.5rem = 56px）一致，
+   *      改一处就要改另一处（同样跟着走的还有 /tools/uke 的移动端一屏布局）。
+   */
+  --nav-h: 56px;
   color-scheme: light;
+
+  /* ★ 首页场景（那一幕「猫咖」，组件见 src/components/scene/）的专用令牌 ★
+     深浅两套（这一套 = "白天的猫咖"：奶油墙、木吧台、暖木地板、暖黄吊灯；
+     打烊后那一套见下面的 [data-theme="dark"]）。
+
+     两条原则，动颜色前先认下：
+       1. **饱和度一律压低** —— 这套颜色是背景，一浓就会盖过猫和吊牌；
+       2. **线稿只用 --scene-ink 这一支** —— 所有道具共用同一种描边色，整幕才像
+          "一个人画的"。猫自己的线是近黑的（描摹稿原色），所以这一支也压得比较深。
+     配色直接取自参考图（暖木 + 奶油 + 鼠尾草绿护墙板），不是凭空调的。 */
+  /* 房间：上墙 / 木地板 */
+  --scene-wall: #ece0c9;        /* 上墙：奶油米 */
+  --scene-wall-low: #e2d3b7;    /* 墙的下半段：暗一档，墙面就不平了 */
+  --scene-floor: #d8b184;       /* 木地板 */
+  --scene-floor-line: #c0966a;  /* 地板拼缝（画几条就够，铺满会吵） */
+  /* 木作：家具 / 窗框 / 搁板（同一个色系三个明度） */
+  --scene-wood: #c99a68;
+  --scene-wood-dark: #a87b4e;
+  --scene-wood-light: #ddb98f;
+  /* 吧台：浅木台面 + 鼠尾草绿护墙板（参考图里吧台下面那一段） */
+  --scene-counter: #e9cda7;     /* 台面板 */
+  --scene-counter-edge: #bb8a5b;/* 台沿的一条亮线：一块板有没有厚度全靠它 */
+  --scene-wainscot: #93a486;    /* 护墙板（吧台立面） */
+  --scene-wainscot-line: #7c8c70;/* 护墙板的竖条 */
+  /* 绿植 */
+  --scene-pot: #ce8f68;         /* 陶盆 */
+  --scene-pot-edge: #a86b45;
+  --scene-leaf: #9ac077;        /* 叶 */
+  --scene-leaf-deep: #6e9552;   /* 叶（深一档，用来分前后） */
+  /* 灯 */
+  --scene-glow: #f8dc9e;        /* 灯光 */
+  --scene-glow-edge: #d9ab5a;
+  --scene-cord: #9c8a72;        /* 绳索 / 电线 */
+  --scene-metal: #cfc9be;       /* 唱片机底板台面 / 咖啡机机身 */
+  --scene-metal-side: #b3aca1;  /* 底板立面：比台面暗一档，扁板才有厚度 */
+  --scene-metal-edge: #9b9488;
+  --scene-vinyl: #33302c;       /* 黑胶 */
+  --scene-vinyl-label: #f2eee4;
+  --scene-vinyl-sheen: #8e8a80; /* 盘面高光：转起来就靠它和那个偏心点看得出来 */
+  --scene-ceramic: #f8f4ea;     /* 陶瓷（杯碟） */
+  --scene-pane: #f7eeda;        /* 窗玻璃：比墙亮一档才像"外面有光" */
+  --scene-pane-edge: #d8c29b;
+  --scene-leather: #b07a5c;     /* 高脚凳的皮座面（参考图里那圈红棕色） */
+  --scene-leather-dark: #96604a;/* 座面的侧面：深一档，一块皮子才有厚度 */
+  --scene-ink: #5c5142;         /* 所有道具的线稿色（统一这一支，画面就"整"） */
+  --scene-cushion: #7d8f68;     /* 地面坐垫（鼠尾草绿，与护墙板同族） */
+  --scene-cushion-dark: #65764f;
+  --scene-sign-bg: #fbf3e2;     /* 吊牌牌面：暖白，压在奶油墙上靠描边和影子分出来 */
+  --scene-sign-edge: #c08e5c;
+  --scene-sign-text: #4a3a26;
+  --scene-sign-shadow: 0 2px 7px rgba(90, 66, 40, 0.2);
 }
 
 :root[data-theme="dark"] {
@@ -55,6 +114,49 @@
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
   --shadow-card-hover: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.12);
   color-scheme: dark;
+
+  /* ★ 首页场景的深色一套 = "打烊后的店，只留一盏灯"。
+     墙压成近黑的暖褐、木头压到很暗，**只有灯和吊牌还亮着** ——
+     这样深色下场景不会变成一块灰，视线仍然落在两处该落的地方。
+     ⚠️ 这一套不能靠"把浅色那套整体调暗"得到：明度压下去以后，
+        **色相当作识别信号的作用会放大**（谁是谁全靠色相分），
+        所以绿（护墙板 / 叶）与木（家具）的色相分离要比浅色那套更开一点。 */
+  --scene-wall: #2b231b;
+  --scene-wall-low: #332a20;
+  --scene-floor: #40301f;
+  --scene-floor-line: #4e3b26;
+  --scene-wood: #6b4f30;
+  --scene-wood-dark: #523a22;
+  --scene-wood-light: #7f5d38;
+  --scene-counter: #5e4629;
+  --scene-counter-edge: #7d5c38;
+  --scene-wainscot: #35422d;
+  --scene-wainscot-line: #43523a;
+  --scene-cord: #6b5b46;
+  --scene-pot: #8a5a3d;
+  --scene-pot-edge: #a87550;
+  --scene-leaf: #55804a;
+  --scene-leaf-deep: #3f6238;
+  --scene-glow: #f0c877;
+  --scene-glow-edge: #b98c3e;
+  --scene-metal: #524d45;
+  --scene-metal-side: #3d3933;
+  --scene-metal-edge: #7a746a;
+  --scene-vinyl: #1a1713;
+  --scene-vinyl-label: #9c958a;
+  --scene-vinyl-sheen: #7d776e;
+  --scene-ceramic: #8f8677;
+  --scene-pane: #3d3529;
+  --scene-pane-edge: #574933;
+  --scene-leather: #74493a;
+  --scene-leather-dark: #573529;
+  --scene-ink: #9d917d;
+  --scene-cushion: #46543a;
+  --scene-cushion-dark: #37422d;
+  --scene-sign-bg: #3b2d19;
+  --scene-sign-edge: #8a6939;
+  --scene-sign-text: #edd9a8;
+  --scene-sign-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 
@@ -74,6 +176,21 @@ body {
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 0.5px solid var(--border);
+}
+
+/**
+ * ★ 吸顶导航栏：把那 0.5px 的下边线**从布局里挪出去**（改成用 inset 阴影画）。
+ *
+ *   0.5px 的 border 在多数 DPR 下会实打实占掉 1px，于是 header 变成 57px ——
+ *   而首页的整屏高度是按 `--nav-h: 56px`（= h-14）算的，就差这 1px 冒出纵向滚动条。
+ *   box-shadow 不参与布局，header 就精确等于 h-14 了。
+ *
+ *   ⚠️ 这是"差 1px 就冒滚动条"那一类问题的**通用解法**：凡是拿"导航栏高度"去减
+ *      `100dvh` 的地方（首页 / 虚拟尤克里里的移动端一屏），都吃这一条。
+ */
+header.glass {
+  border-bottom: 0;
+  box-shadow: inset 0 -0.5px 0 var(--border);
 }
 
 .card {
@@ -398,3 +515,754 @@ body {
   opacity: 0;
 }
 
+/* ═══════════════════ 首页场景「猫咖」（组件 src/components/scene/） ═══════════════════
+
+   这一幕就是首页的**全部内容**：占满导航栏以下整屏（不是页面里的一块卡片）。
+   为什么要重做 —— 上一版四只猫虽然 x / 大小都不同，但**全踩在同一条台面线上**，
+   四个变量里"高度"没被破掉，所以看着还是"排"。这一版照参考图（一间猫咖）
+   把四种落脚面造出来，猫落在四个**互不相同的高度**上：
+
+       猫架（壁挂搁板） → 吧台台面 → 高脚凳 → 木地板
+            curl            sleep      listen     sing
+
+   ★ 本节是「谁站在哪儿、多大」的唯一真相，横屏 / 竖屏**两套构图**用媒体查询切
+     （切换点是 `@media (min-aspect-ratio: 5/4)`，两套都是独立排的，不是互相缩放）。
+     放这里而不是 siteConfig，是因为这几只猫的站位**要反复调**：
+     浏览器里改一个数就能看到，不用等编译。
+
+   ── 改之前先认清自己在改哪一条 ─────────────────────────────────────────
+     1. 房间的两根水平基准线 → 本节开头的 `--hs-floor` / `--hs-deck`
+        （改它们 = 整个房间重排；所有写着 `var(--hs-*)` 的东西会自动跟随）
+     2. 猫的站位 → `.home-scene .cat[data-pose="..."]`
+        （⚠️ 猫的 bottom 是**写死的数**，不会跟着 --hs-* 走 —— 见下面的对照表）
+     3. 道具的位置尺寸 → `--sp-*` / `--tt-*` / `--sign-*` 那几个变量 + 各自的 left/bottom
+     4. 吊牌的 x / drop → 在 siteConfig.scene.signs 里（它要跟着路由走，所以留在那边）
+
+   ── 两根水平基准线 ─────────────────────────────────────────────────────
+     --hs-floor  木地板的上沿 = 吧台底座落的那条线
+     --hs-deck   吧台台面 = 猫 / 杯碟 / 咖啡机 / 唱片机落的那条线
+
+   ── 落脚面对照表（猫的 bottom 该给多少；直接写 % 数，不写成 calc）──────────
+     猫架搁板    = 架子的 bottom                          （搁板上沿 = 该 SVG 的 y=0）
+     高脚凳座面  = 凳子 bottom + 14/122 × 凳子高度         ≈ 凳子 bottom + 1.5~2.5%
+     吧台台面    = --hs-deck                              （两边都给同一个数）
+     地面坐垫    = 垫子 bottom + 40/76 × 垫子高度          ≈ 垫子 bottom + 4~6%
+     木地板      = 0（留 1~2%，不然像陷进地里）
+     ⚠️ 造型的 viewBox 高度一改，上面的比例就要重算 —— 否则猫会浮在半空或陷进板子。
+
+   ── 图层（z-index，数越小越靠后）───────────────────────────────────────
+      1  房间（墙 / 木地板 / 吧台）           2  墙面构件（窗 / 猫架 / 罐架）
+      4  吊挂物（吊灯 / 挂植）                6  台面道具（盆栽/杯碟/咖啡机/唱片机）
+     10  猫架上的猫      11  台面上的猫
+     12  地面坐垫        13  高脚凳        14  凳子上的猫      15  地面上的猫
+     20  圆木桌 —— 最前的一件，下缘会被裁掉
+     30  吊牌 —— 它是入口，任何时候都不能被挡住
+   ========================================================================== */
+
+/* 首页那一屏：导航栏以下的整块地方，场景铺满它。
+   ★ 高度用 `calc(100dvh - --nav-h)` 而不是靠 flex 撑开 —— 一个数写死，
+     比"给祖先套一层 flex 列、再让子项 height:100%"稳（后者依赖百分比高度能否
+     穿过 flex 项解析，各浏览器历史上不一致）。
+   ⚠️ 改这个高度前先确认导航栏还是 h-14（见 --nav-h 的说明）。 */
+.home-stage {
+  /* 老浏览器没有 dvh，先给 vh 兜底；认 dvh 的会覆盖掉上一行 */
+  height: calc(100vh - var(--nav-h));
+  height: calc(100dvh - var(--nav-h));
+  /* 窗口被压得极矮时（横屏手机 + 地址栏展开）别把场景挤成一条缝 */
+  min-height: 360px;
+}
+
+.home-scene {
+  position: relative;
+  width: 100%;
+  height: 100%; /* 高度由 HomePage 的 .home-stage 给（导航栏以下整屏） */
+  /* 绳子从顶端出发、地面贴着底边 ⇒ 必须裁掉溢出的部分（圆木桌就是故意被裁的） */
+  overflow: hidden;
+  /* 自成层叠上下文：里面那一堆 z-index 不会漏到页面上跟导航栏打架 */
+  isolation: isolate;
+  /* 兜底底色：墙 / 地板两块会盖住它，只有窗框和牌的缝隙里会露出来 */
+  background: var(--scene-wall);
+
+  /* ★★ 落脚面 —— 整个场景的"高度"就是由这几个数定义的 ★★
+     猫站在哪儿、杯子摆在哪儿，全都引用它们。一件事只有一个来源，
+     不会出现"猫的 bottom 和凳子的 bottom 各写一遍、改了一处就散架"。
+     下面这一套是**竖屏**的（手机一屏）；横屏那一套在后面的媒体查询里整组换掉。 */
+  --hs-floor: 22%;             /* 木地板的上沿 */
+  --hs-deck: 46%;              /* 吧台台面 */
+  --line-deck: var(--hs-deck); /* 别名：猫和道具都读它，读起来才像"落脚面" */
+  --line-shelf: 76%;           /* 猫架搁板上沿   → curl 站这条线 */
+  --line-seat: 34%;            /* 高脚凳座面中心 → listen 站这条线 */
+  --line-cushion: 6%;          /* 坐垫顶面中心   → sing 站这条线 */
+
+  /**
+   * 吧台"台面板"占**吧台自己**多高（= 台沿那条亮线的位置）。
+   * ⚠️ 分母是"吧台"不是"场景"：换构图时按 5% 场景高 ÷ (--hs-deck − --hs-floor) 重算。
+   */
+  --hs-lip: 21%;
+
+  /**
+   * ★★ 造型在取景框里**不是贴着框底的** ★★
+   *   引擎给的取景框（frame:'thumb'）四周留了白边，而**每个姿态留的还不一样**。
+   *   实测（占**框高**的比例，用 svg .norm 的静态 bbox × transform 量的）：
+   *       listen 0.236   sing 0.227   curl 0.236   sleep 0.023
+   *   所以猫的 `bottom` 不能直接写落脚面，要写
+   *       `落脚面 − 该只的 height × 下面这个比例`
+   *   （**减**：造型既然悬在框底之上，盒子底边就得低于落脚面，
+   *     这样造型才正好落在线上。第一版写成加号，猫就整只飘在凳子上面。）
+   *   否则猫会浮在半空。sleep 几乎不留边，所以它看着一直是对的 ——
+   *   另外三只则明显飘着，这正是重做这一版时踩到的第一个坑。
+   * ⚠️ 换猫的描摹稿 / 换引擎的 frame 时，这四个数必须**重新量**。
+   */
+  /* ⚠️ 这四个必须是**无单位数**：它们要拿去乘一个百分比
+     （`calc(高度% * 比例)`）。写成 `23.6%` 的话 `% × %` 在 calc 里非法，
+     整条 bottom 会静默失效、回落到 auto —— 四只猫一起飞到天花板去，
+     而且**控制台不报错**。 */
+  --pad-listen: 0.236;
+  --pad-sing: 0.227;
+  --pad-curl: 0.236;
+  --pad-sleep: 0.023;
+
+  /**
+   * 按**高度**给尺寸的三件（猫架 / 高脚凳 / 坐垫）：它们的关键线（搁板上沿、
+   * 座面中心、垫子顶面）必须和"猫站在哪儿"严丝合缝。按宽度给尺寸的话，
+   * 屏一宽它们就跟着变高，那条落脚线会漂 —— 猫就会浮起来或陷进板子里。
+   */
+  --h-shelf: 5%;
+  --h-stool: 16%;
+  --h-cushion: 9%;
+  --h-table: 26%; /* 竖屏不显示圆木桌（.sp-table-a 是 display:none），这里只是给个值 */
+
+  /**
+   * 每只猫的高度（场景高的 %）。**必须做成变量**：猫的 bottom 是
+   * `落脚面 − 自己的高度 × 空隙比例`，高度变了 bottom 就得跟着变 ——
+   * 抽成变量以后，换构图只改这一组数，bottom 会自己算对。
+   * （第一版把高度写死在 bottom 的 calc 里，横屏换了高度、bottom 却是竖屏的数，
+   *   猫就又飘起来了。）
+   */
+  --cat-curl-h: 10%;
+  --cat-sleep-h: 15%;
+  --cat-listen-h: 20%;
+  --cat-sing-h: 26%;
+
+  /* 其余道具按**宽度**给（它们不承载落脚面，跟着屏宽变形无所谓）。
+     ⚠️ 窄的 / 带文字的用 px —— 它们不该跟着屏宽一起放大。 */
+  --sp-lamp-w: 46px;
+  --sp-hanging-w: 58px;
+  --sp-window-w: 32%;
+  --sp-jars-w: 30%;
+  --sp-plant-w: 46px;
+  --sp-cup-w: 42px;
+  --tt-w: 74px;
+  --sign-w: 78px;
+  --sign-h: 46px;
+  --sign-cord: 20px;
+}
+
+/* ── 房间：墙 / 木地板 / 吧台 ──────────────────────────────────────────────
+   三块纯色，别加渐变 —— 场景要"平"，猫才跳得出来（渐一变多，猫就糊进去了）。
+   吧台用一层**硬停**的线性渐变同时画出「台面板 + 台沿亮线 + 板下阴影 + 绿护墙板」，
+   一个元素画完，不用伪元素。 */
+.home-scene .hs-wall,
+.home-scene .hs-floor,
+.home-scene .hs-counter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+}
+
+.home-scene .hs-wall {
+  top: 0;
+  height: calc(100% - var(--hs-deck));
+  background: var(--scene-wall);
+}
+
+.home-scene .hs-floor {
+  bottom: 0;
+  height: var(--hs-floor);
+  background: var(--scene-floor);
+}
+
+.home-scene .hs-counter {
+  bottom: var(--hs-floor);
+  height: calc(var(--hs-deck) - var(--hs-floor));
+  background:
+    linear-gradient(
+      to bottom,
+      var(--scene-counter) 0 var(--hs-lip),
+      var(--scene-counter-edge) var(--hs-lip) calc(var(--hs-lip) + 0.7%),
+      var(--scene-wall-low) calc(var(--hs-lip) + 0.7%) calc(var(--hs-lip) + 5%),
+      transparent calc(var(--hs-lip) + 5%) calc(100% - 4%),
+      var(--scene-wall-low) calc(100% - 4%)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--scene-wainscot) 0 43px,
+      var(--scene-wainscot-line) 43px 44.4px
+    );
+  border-bottom: 1px solid var(--scene-floor-line);
+}
+
+/* ── 猫：位置由下面 `.home-scene .cat[data-pose=...]` 给 ──────────────────
+   引擎在 scene 布局下会把整个 .cat-motion 层设成 pointer-events:none
+   （否则这一层会盖住吊牌的点击），这里把命中区**只开回 .cat 自己**。 */
+.home-scene .cat-motion {
+  /* row 布局的高度是 --cat-h（px），scene 布局要铺满场景 */
+  height: 100%;
+}
+
+.home-scene .cat {
+  position: absolute;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  /* 取景框 vbThumb 的比例（引擎的 frame:'thumb'）——
+     写死它，宽度才能由高度推出来，不必依赖 svg 的固有尺寸参与 shrink-to-fit。
+     ⚠️ 换 frame 时这里要跟着换（同时 --pad-* 那四个数要重新量）。 */
+  aspect-ratio: 331.3 / 351.1;
+}
+
+.home-scene .cat svg {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+
+/* ── 道具 ───────────────────────────────────────────────────────────────
+   公共部分只管"是个绝对定位的盒子 + 里面的 SVG 撑满"；
+   摆哪儿、多大一律各写各的（竖屏那套在上，横屏那套在媒体查询里）。 */
+.home-scene .sp {
+  position: absolute;
+}
+
+.home-scene .sp svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* 唱片机不是 .sp（它有自己的组件），给同样的兜底 */
+.home-scene .scene-turntable svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* 线稿色统一走 --scene-ink，整幕才"像一个人画的" */
+.home-scene .sp-cord     { fill: none; stroke: var(--scene-cord); stroke-width: 1; }
+.home-scene .sp-socket   { fill: var(--scene-metal); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-shade    { fill: var(--scene-glow-edge); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-shade-lip{ fill: var(--scene-glow); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-bulb     { fill: var(--scene-glow); stroke: var(--scene-glow-edge); stroke-width: 1; }
+.home-scene .sp-filament { fill: none; stroke: var(--scene-glow-edge); stroke-width: 1.2; stroke-linecap: round; }
+.home-scene .sp-pot      { fill: var(--scene-pot); stroke: var(--scene-pot-edge); stroke-width: 1; }
+.home-scene .sp-blade    { fill: var(--scene-leaf); }
+.home-scene .sp-vine     { fill: none; stroke: var(--scene-leaf-deep); stroke-width: 1; }
+.home-scene .sp-saucer   { fill: var(--scene-ceramic); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-cupbody  { fill: var(--scene-ceramic); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-handle   { fill: none; stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-vapor    { fill: none; stroke: var(--scene-cord); stroke-width: 1.2; stroke-linecap: round; }
+
+/* 壁挂搁板（猫架与罐架共用同一套造型语言） */
+.home-scene .sp-shelf-deck    { fill: var(--scene-wood); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-shelf-top     { fill: var(--scene-wood-light); }
+.home-scene .sp-shelf-bracket { fill: var(--scene-wood-dark); }
+
+/* 窗 */
+.home-scene .sp-win-pane    { fill: var(--scene-pane); }
+.home-scene .sp-win-leaf    { fill: var(--scene-leaf); opacity: 0.5; }
+.home-scene .sp-win-leaf.d  { fill: var(--scene-leaf-deep); opacity: 0.42; }
+.home-scene .sp-win-mullion { stroke: var(--scene-wood); stroke-width: 3.4; }
+.home-scene .sp-win-frame   { fill: none; stroke: var(--scene-wood); stroke-width: 10; }
+.home-scene .sp-win-sill    { fill: var(--scene-wood); stroke: var(--scene-ink); stroke-width: 0.8; }
+
+/* 咖啡机 */
+.home-scene .sp-mach-cup    { fill: var(--scene-ceramic); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-mach-lid    { fill: var(--scene-metal-side); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-mach-body   { fill: var(--scene-metal); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-mach-gauge  { fill: var(--scene-ceramic); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-mach-needle { stroke: var(--scene-ink); stroke-width: 1; stroke-linecap: round; }
+.home-scene .sp-mach-head   { fill: var(--scene-metal-side); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-mach-handle { fill: var(--scene-wood-dark); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-mach-tray   { fill: var(--scene-metal-side); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-mach-wand   { fill: none; stroke: var(--scene-metal-edge); stroke-width: 1.6; stroke-linecap: round; }
+
+/* 罐架 */
+.home-scene .sp-jar-body { fill: var(--scene-ceramic); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-jar-lid  { fill: var(--scene-wood-dark); stroke: var(--scene-ink); stroke-width: 0.8; }
+
+/* 高脚凳：座面用 --scene-leather，侧沿压深一档，一块皮子才有厚度 */
+.home-scene .sp-stool-leg   { fill: none; stroke: var(--scene-wood-dark); stroke-width: 5; stroke-linecap: round; }
+.home-scene .sp-stool-ring  { fill: none; stroke: var(--scene-wood-dark); stroke-width: 3.4; }
+.home-scene .sp-stool-seat  { fill: var(--scene-leather); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-stool-side  { fill: var(--scene-leather-dark); stroke: var(--scene-ink); stroke-width: 0.8; }
+.home-scene .sp-stool-stud  { fill: var(--scene-leather-dark); }
+
+/* 圆木桌 / 坐垫 */
+.home-scene .sp-tab-top   { fill: var(--scene-wood-dark); stroke: var(--scene-ink); stroke-width: 1.5; }
+.home-scene .sp-tab-side  { fill: var(--scene-wood-dark); stroke: var(--scene-ink); stroke-width: 1.5; }
+.home-scene .sp-tab-post  { fill: var(--scene-wood-dark); stroke: var(--scene-ink); stroke-width: 0.9; }
+.home-scene .sp-tab-base  { fill: var(--scene-wood-dark); stroke: var(--scene-ink); stroke-width: 0.9; }
+.home-scene .sp-cush-top  { fill: var(--scene-cushion); }
+.home-scene .sp-cush-side { fill: var(--scene-cushion-dark); }
+.home-scene .sp-cush-seam { fill: none; stroke: var(--scene-cushion-dark); stroke-width: 1.2; opacity: 0.7; }
+
+/* 按高度给尺寸的三件：元素只给 height，宽度交给造型自己的比例 ——
+   所以里面的 svg 是 `height:100% / width:auto`，与上面那条通用规则**相反**。
+   ⚠️ 必须写在通用规则之后（同优先级，靠顺序取胜）。 */
+.home-scene .sp-shelf-a,
+.home-scene .sp-stool,
+.home-scene .sp-cushion-a,
+.home-scene .sp-table-a {
+  width: auto;
+}
+
+.home-scene .sp-shelf-a svg,
+.home-scene .sp-stool svg,
+.home-scene .sp-cushion-a svg,
+.home-scene .sp-table-a svg {
+  width: auto;
+  height: 100%;
+}
+
+/* ── 吊挂物：灯从屋顶垂下来（top:0 + 绳子从顶端出发，才像"挂在屋顶"）─────
+   三盏灯的摆动周期彼此错开，也刻意不与吊牌同源 —— 整块布一起晃是最假的。 */
+.home-scene .sp-lamp,
+.home-scene .sp-hanging {
+  top: 0;
+  transform-origin: 50% 0;
+  z-index: 4;
+}
+
+.home-scene .sp-lamp {
+  width: var(--sp-lamp-w);
+  --swing: 0.7deg;
+  animation: scene-sway 9s ease-in-out infinite;
+  animation-delay: calc(var(--delay, 0s) * -1);
+}
+
+.home-scene .sp-hanging {
+  width: var(--sp-hanging-w);
+}
+
+/* ★ 深色下"只留一盏灯" —— 光要**照出一块**，否则屋子只是一片黑。
+   两层：灯泡自己一圈 drop-shadow（点光源），灯下面一大片径向渐变（光池）。
+   浅色下两层都不加：白天本来就亮，再加只会让画面发灰。
+   （drop-shadow 可以直接作用在 SVG 元素上，不必为此引 radialGradient + 唯一 id。） */
+:root[data-theme="dark"] .home-scene .sp-bulb {
+  filter: drop-shadow(0 0 18px var(--scene-glow));
+}
+
+:root[data-theme="dark"] .home-scene .sp-lamp::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 520%;
+  aspect-ratio: 1;
+  /* 圆心压到灯泡上（不是压在灯的底边） */
+  transform: translate(-50%, -34%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgba(240, 200, 119, 0.2) 0%,
+    rgba(240, 200, 119, 0.09) 36%,
+    rgba(240, 200, 119, 0) 70%
+  );
+}
+
+/* 挂植的叶子各颤各的（错相位 = 跟随与重叠；幅度压到几乎看不见才对） */
+.home-scene .sp-leaf {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: scene-leaf 3.8s ease-in-out infinite;
+}
+
+.home-scene .sp-leaf.g2 {
+  animation-delay: -1.7s;
+}
+
+/* 热气：循环上升淡出 —— 二级动作里最便宜的一个，但"这里有杯热的东西"全靠它。
+   台面上有两处（杯口、咖啡机蒸汽棒），相位错开，不同步。 */
+.home-scene .sp-steam {
+  animation: scene-steam 3.2s ease-in-out infinite;
+  animation-delay: calc(var(--delay, 0s) * -1);
+}
+
+/* ═════════════ 竖屏构图（默认）═══════════════════════════════════════════
+   手机一屏：横向只有 ~390px，放不下"一排四层"，所以改成**上下四层** ——
+   猫架 / 台面 / 高脚凳 / 木地板各一只，x 交错成 26 / 48 / 26 / 69。
+   同一根 x 上出现两只（26%：高处蜷着的与凳上听歌的）正是想要的效果：
+   一眼就能读出"高低"这件事。
+   ------------------------------------------------------------------------ */
+
+/* 台面道具：全落在 --line-deck 这条线上（这几件的造型底边就在 viewBox 底边，
+   所以 `bottom` 直接写落脚面即可，不用补偿空隙）。 bottom 直接写落脚面即可 —— 底边就是坐地线。 */
+.home-scene .sp-plant-a,
+.home-scene .sp-cup-a,
+.home-scene .scene-turntable {
+  bottom: var(--line-deck);
+  z-index: 6;
+}
+
+.home-scene .sp-plant-a { left: 2%;  width: var(--sp-plant-w); }
+.home-scene .sp-cup-a   { left: 14%; width: var(--sp-cup-w); }
+.home-scene .sp-machine-a { display: none; }
+.home-scene .scene-turntable { left: 76%; width: var(--tt-w); }
+
+/* 墙面构件：窗 / 猫架 / 罐架 */
+.home-scene .sp-window-a { left: 66%; bottom: 48%; width: var(--sp-window-w); z-index: 2; }
+.home-scene .sp-jars-a   { left: 24%; bottom: 58%; width: var(--sp-jars-w);   z-index: 2; }
+/* 猫架：**上沿**才是落脚面（它的造型是"搁板在 viewBox 顶边"），
+   所以 bottom = 落脚面 − 架子自身高度 */
+.home-scene .sp-shelf-a {
+  left: 4%;
+  height: var(--h-shelf);
+  bottom: calc(var(--line-shelf) - var(--h-shelf));
+  z-index: 2;
+}
+
+/* 吊挂物：竖屏收束 —— 一盏灯 + 一盆挂植，多的都藏掉（用户原话："手机端收束一下"） */
+.home-scene .sp-lamp-a    { left: 8%; }
+.home-scene .sp-lamp-b    { left: 46%; }
+.home-scene .sp-lamp-c    { display: none; }
+.home-scene .sp-hanging-a { left: 84%; }
+.home-scene .sp-hanging-b { display: none; }
+
+/* 地面：坐垫（在 sing 脚下）/ 高脚凳（在 listen 脚下）。
+   两者都是"关键线在造型中段"的，所以 bottom = 落脚面 − 高度 × 中段比例 */
+.home-scene .sp-cushion-a {
+  left: 46%;
+  height: var(--h-cushion);
+  /* 垫子顶面椭圆圆心在造型 64 高里的第 40 行 ⇒ 离底 24/64 = 0.375 */
+  bottom: calc(var(--line-cushion) - var(--h-cushion) * 0.375);
+  z-index: 12;
+}
+/* 凳子：座面中心在造型 116 高里的第 14 行 ⇒ 离底 102/116 = 0.879。
+   两只凳子共用这一条（只差 left），改一处两只一起动 */
+.home-scene .sp-stool {
+  height: var(--h-stool);
+  bottom: calc(var(--line-seat) - var(--h-stool) * 0.879);
+  z-index: 13;
+}
+.home-scene .sp-stool-a { left: 12%; }
+.home-scene .sp-stool-b { display: none; }
+.home-scene .sp-table-a { display: none; }
+
+/* 猫：bottom = 落脚面 − 自身高度 × 该姿态离框底的空隙（见 --pad-*）。
+   ★ 四只落在四个**互不相同**的高度上，这就是"高低都有"：
+     竖屏 ≈ 73.6% / 45.7% / 29.3% / 0.1%（猫架 → 台面 → 凳子 → 坐垫）。 */
+.home-scene .cat[data-pose="curl"] {
+  left: 26%;
+  height: var(--cat-curl-h);
+  bottom: calc(var(--line-shelf) - var(--cat-curl-h) * var(--pad-curl));
+  z-index: 10;
+}
+
+.home-scene .cat[data-pose="sleep"] {
+  left: 48%;
+  height: var(--cat-sleep-h);
+  bottom: calc(var(--line-deck) - var(--cat-sleep-h) * var(--pad-sleep));
+  z-index: 11;
+}
+
+.home-scene .cat[data-pose="listen"] {
+  left: 26%;
+  height: var(--cat-listen-h);
+  bottom: calc(var(--line-seat) - var(--cat-listen-h) * var(--pad-listen));
+  z-index: 14;
+}
+
+.home-scene .cat[data-pose="sing"] {
+  left: 69%;
+  height: var(--cat-sing-h);
+  bottom: calc(var(--line-cushion) - var(--cat-sing-h) * var(--pad-sing));
+  z-index: 15;
+}
+
+/* ── 吊牌（菜单）────────────────────────────────────────────────────────
+   三层各管一个 transform，互不覆盖（同一个 transform 上叠两个动画会互相盖掉）：
+     定位 translateX(-50%) → 摆动 rotate（原点在挂点，所以是**钟摆**）→ 悬停 translateY */
+.home-scene .scene-sign {
+  position: absolute;
+  z-index: 30; /* 永远在猫之上：它是入口，不能被任何东西挡住 */
+  display: block;
+  -webkit-tap-highlight-color: transparent;
+  transform: translateX(-50%);
+}
+
+/* 两块牌的位置与摆动 —— ★ **故意不并排、不同高、不同周期**：
+   并排同高就退回"两个按钮"了，错开才像"挂上去的牌子"。
+   周期也错开，两块牌永远不会同时摆到端点（跟随与重叠）。
+   ⚠️ top 是"挂点"到场景顶部的距离；牌子会从挂点再往下垂一截（绳 + 牌），
+      所以 top 给 3% ≠ 牌子占 3%。 */
+.home-scene .scene-sign-1 { left: 30%; top: 3%;  --swing: 1.6deg; --period: 4.2s; }
+.home-scene .scene-sign-2 { left: 62%; top: 12%; --swing: 1.3deg; --period: 5.1s; }
+
+.home-scene .scene-sign-sway {
+  display: block;
+  transform-origin: 50% 0;
+  animation: scene-sway var(--period, 4.5s) ease-in-out infinite;
+}
+
+.home-scene .scene-sign-lift {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-scene .scene-sign-cord {
+  width: 1px;
+  height: var(--sign-cord);
+  background: var(--scene-cord);
+  /* 和牌子叠 3px：悬停把牌子提起 4px 时不会在绳与牌之间露出断口 */
+  margin-bottom: -3px;
+}
+
+.home-scene .scene-sign-board {
+  display: grid;
+  place-items: center;
+  width: var(--sign-w);
+  height: var(--sign-h);
+  border-radius: 7px;
+  background: var(--scene-sign-bg);
+  border: 1px solid var(--scene-sign-edge);
+  box-shadow: var(--scene-sign-shadow);
+  /* 一条带回弹的曲线：过冲 5% 再落回，正是迪士尼的「夸张」+「慢入慢出」 */
+  transition: transform 0.42s cubic-bezier(0.34, 1.45, 0.64, 1), box-shadow 0.3s ease;
+}
+
+/* 悬停 / 键盘聚焦：把牌子提起来一点并摆正 —— 这是"可以点"的唯一提示
+   （场景里只有这一处可点，所以它必须明确） */
+.home-scene .scene-sign:hover .scene-sign-board,
+.home-scene .scene-sign:focus-visible .scene-sign-board {
+  transform: translateY(-4px) scale(1.05) rotate(1deg);
+  box-shadow: 0 7px 18px rgba(90, 66, 40, 0.28);
+}
+
+.home-scene .scene-sign:focus-visible {
+  outline: none;
+}
+
+.home-scene .scene-sign-label {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  /* 补掉 letter-spacing 在末字后面留的那一份空，字才是真的居中 */
+  text-indent: 0.14em;
+  color: var(--scene-sign-text);
+}
+
+/* ── 唱片机（纯装饰，只转）────────────────────────────────────────────────
+   转速跟 siteConfig.cats.bpm 同源（一圈 = 两拍），所以它和猫的踩拍永远对得上 ——
+   整幕看着才是一个东西在动，而不是几段动画各演各的。 */
+.home-scene .scene-turntable {
+  position: absolute;
+}
+
+/* 造型照参考图（高视角俯看一块很扁的底板）。台面是一块梯形 —— 前沿比后沿宽，
+   这一条就是"视点在上前方"的全部来源；唱片因此可以画得比较"圆"（扁度 0.55）。
+   ★ 改这里的任何一样都要连带改台面梯形与 @keyframes scene-spin 里的那个 scale，
+     否则会像两张不同视点的图拼在一起。 */
+.home-scene .tt-side   { fill: var(--scene-metal-side); stroke: var(--scene-metal-edge); stroke-width: 1; }
+.home-scene .tt-deck   { fill: var(--scene-metal); stroke: var(--scene-metal-edge); stroke-width: 1; }
+.home-scene .tt-foot   { fill: var(--scene-metal-edge); }
+.home-scene .tt-vinyl  { fill: var(--scene-vinyl); }
+.home-scene .tt-label  { fill: var(--scene-vinyl-label); }
+.home-scene .tt-hole   { fill: var(--scene-vinyl); }
+.home-scene .tt-groove { stroke: var(--scene-vinyl-sheen); stroke-width: 0.5; opacity: 0.45; }
+.home-scene .tt-pivot  { fill: var(--scene-metal-edge); }
+.home-scene .tt-weight { fill: var(--scene-metal-edge); stroke: var(--scene-metal-side); stroke-width: 0.6; }
+.home-scene .tt-head   { fill: var(--scene-metal-edge); }
+.home-scene .tt-lever  { fill: var(--scene-metal-side); stroke: var(--scene-metal-edge); stroke-width: 0.5; }
+.home-scene .tt-arm    { stroke: var(--scene-metal-edge); stroke-width: 1.4; stroke-linecap: round; }
+
+/* 唱片：整组绕自己的圆心匀速转。
+   ★★ 变换顺序是「先转、再压扁」—— 圆的投影因此恒等于同一张椭圆，轮廓不动，
+      动的只有跟着转的高光与那个偏心标记点。反过来（先画椭圆再转）会把扁椭圆
+      转成竖椭圆，看着像硬币翻跟头。SVG 的 transform 是从右往左生效，
+      所以 scene-spin 里写的是 translate → scale → rotate。
+   ⚠️ transform-box 用 fill-box：整组里最大的成员是 r=26.5 的圆盘，
+      高光与中心孔都落在它之内 ⇒ 组的 bbox 中心就是圆心。 */
+.home-scene .tt-disc {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scene-spin var(--turn, 1.25s) linear infinite;
+}
+
+/* 对置的两条高光：让"它在转"这件事在小尺寸下也读得出来 */
+.home-scene .tt-sheen {
+  fill: var(--scene-vinyl-sheen);
+  opacity: 0.55;
+}
+
+/* 飘出来的音符：三个错开相位，上浮 + 淡出 */
+.home-scene .tt-note {
+  fill: var(--scene-glow-edge);
+  animation: scene-note 2.6s ease-out infinite;
+}
+
+.home-scene .tt-note.n2 { animation-delay: -0.9s; }
+.home-scene .tt-note.n3 { animation-delay: -1.8s; }
+
+/* ── 关键帧 ────────────────────────────────────────────────────────────── */
+@keyframes scene-sway {
+  0%,
+  100% { transform: rotate(calc(var(--swing, 1.5deg) * -1)); }
+  50%  { transform: rotate(var(--swing, 1.5deg)); }
+}
+
+@keyframes scene-leaf {
+  0%,
+  100% { transform: rotate(-1.2deg); }
+  50%  { transform: rotate(1.2deg); }
+}
+
+@keyframes scene-steam {
+  0%   { opacity: 0; transform: translateY(4px); }
+  35%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-9px); }
+}
+
+/* 唱片自转。★ 三个函数都要写全，且两个端点必须**同一个函数列表**，否则浏览器
+   会去插值 transform 列表本身（结果不可预期），而不是插值那个角度。
+   从右往左生效 ⇒ 实际是「绕圆心转，然后整体压扁」。 */
+@keyframes scene-spin {
+  from { transform: translate(73.5px, 44.5px) scale(1, 0.55) rotate(0deg); }
+  to   { transform: translate(73.5px, 44.5px) scale(1, 0.55) rotate(360deg); }
+}
+
+@keyframes scene-note {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.7); }
+  25%  { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(-20px) translateX(-7px) scale(1.05); }
+}
+
+/* ══════════════ 横屏构图 ══════════════════════════════════════════════════
+   ★ 判据是**画面比例**而不是屏宽：横屏才放得下"一排四层"，竖屏只能用"上下四层"。
+     两套是各自重排的，**不是同一套缩放** —— 同一个 left 在两套里含义不同。
+   横屏里横向空间宽裕，于是：
+     · 地面层补上圆木桌（压在左下、下缘故意裁掉）与第二只凳子；
+     · 台面层补上咖啡机（体积最大的一件，撑住右半边）；
+     · 多给两盏灯与一盆挂植，把那条顶边铺满。
+   ------------------------------------------------------------------------ */
+@media (min-aspect-ratio: 5/4) {
+  .home-scene {
+    --hs-floor: 27%;
+    --hs-deck: 50%;
+    --hs-lip: 22%;
+
+    /* 落脚面整体上移一档：横屏的墙更高，猫架能挂得更高 */
+    --line-shelf: 74%;
+    --line-seat: 26%;
+    --line-cushion: 7%;
+
+    --h-shelf: 7%;
+    --h-stool: 20%;
+    --h-cushion: 13%;
+    --h-table: 26%;
+
+    /* 横屏的尺寸大多按**场景宽度的百分比**给（场景是通栏的，所以 % 与 vw 同义），
+       只有极小或带文字的（灯 / 杯 / 牌）用 clamp 兜住两端 —— 免得 4K 上像芝麻、
+       笔记本上又挤成一团。 */
+    --sp-lamp-w: clamp(56px, 5.1vw, 92px);
+    --sp-hanging-w: clamp(70px, 6.7vw, 122px);
+    --sp-window-w: 17%;
+    --sp-jars-w: 11%;
+    --sp-plant-w: clamp(46px, 4.5vw, 82px);
+    --sp-cup-w: clamp(36px, 3.6vw, 64px);
+    --tt-w: clamp(104px, 11.6vw, 200px);
+    --sign-w: clamp(88px, 7.5vw, 140px);
+    --sign-h: calc(var(--sign-w) * 0.537);
+    --sign-cord: calc(var(--sign-w) * 0.26);
+  }
+
+  /* 墙面构件：窗贴右边（把墙分掉一半），罐架回到台面正上方 */
+  .home-scene .sp-window-a { left: 83%; bottom: 50%; }
+  .home-scene .sp-jars-a   { left: 28%; bottom: 62%; }
+  .home-scene .sp-shelf-a  { left: 4%; }
+
+  /* 吊挂物：三盏灯 + 两盆挂植铺满整条顶边（空一格就会显出"这是一条边"） */
+  .home-scene .sp-lamp-a    { left: 8%; }
+  .home-scene .sp-lamp-b    { left: 42%; }
+  .home-scene .sp-lamp-c    { display: block; left: 69%; }
+  .home-scene .sp-hanging-a { left: 22%; }
+  .home-scene .sp-hanging-b { display: block; left: 88%; }
+
+  /* 台面：盆栽最里、杯碟其次、睡着的猫居中、咖啡机与唱片机在最外 */
+  .home-scene .sp-plant-a      { left: 2%; }
+  .home-scene .sp-cup-a        { left: 10%; }
+  .home-scene .sp-machine-a    { display: block; left: 55%; width: 7%; }
+  .home-scene .scene-turntable { left: 76%; }
+
+  /* 地面：圆木桌压在左下（下缘裁掉一截 —— 前景的"出画"感全靠它）。
+     ★ 它和猫架/凳子/坐垫一样**按高度给尺寸**：按宽度给的话，1920×640 这种
+       "宽而矮"的窗口里它会比半个画面还高（22% 宽 × 0.627 的字形比例 ≈ 45% 场景高）。 */
+  .home-scene .sp-table-a {
+    display: block;
+    left: 2%;
+    bottom: -14%;
+    height: var(--h-table);
+    z-index: 20;
+  }
+  /* 凳子/坐垫的 left 是**算出来的**：它们按高度给尺寸，宽度由造型比例推出，
+     所以要让"造型中心"落在那只猫的 x 上，left = 猫的 x − 半个宽度 */
+  .home-scene .sp-cushion-a { left: 40.1%; } /* 中心 49.0%（sing 的 x） */
+  .home-scene .sp-stool-a   { left: 57.9%; } /* 中心 63.0%（listen 的 x） */
+  .home-scene .sp-stool-b {
+    display: block;
+    left: 80.9%;
+  }
+
+  /* 猫：四个落脚面 = 猫架 74% / 台面 50% / 凳子座面 26% / 坐垫顶面 7%
+     x 交错成 15 / 45 / 60 / 44 —— 高位在左、低位在下，但间距**故意不等**，
+     免得又退回一条等距的斜线。
+     ⚠️ 这里只改"高度"，不改 bottom —— bottom 是从高度算出来的。 */
+  .home-scene {
+    --cat-curl-h: 13%;
+    --cat-sleep-h: 17%;
+    --cat-listen-h: 21%;
+    --cat-sing-h: 32%;
+  }
+  .home-scene .cat[data-pose="curl"]   { left: 15%; }
+  .home-scene .cat[data-pose="sleep"]  { left: 45%; }
+  .home-scene .cat[data-pose="listen"] { left: 63%; }
+  .home-scene .cat[data-pose="sing"]   { left: 49%; }
+
+  .home-scene .scene-sign-1 { left: 30%; top: 6%; }
+  .home-scene .scene-sign-2 { left: 56%; top: 15%; }
+
+  .home-scene .scene-sign-label { font-size: 16px; }
+}
+
+/* ── 极矮的横屏窗口（比如 1920×620 的浏览器窗口）──────────────────────────
+   高度一压，"台面以上"那段墙就不剩多少了：把台面压低一档、墙上那几件收小，
+   免得窗和猫架顶到吊牌上去。
+   ★ 只改 --hs-deck / --line-* 这几个数，猫与台面道具会**自动跟着走**
+     （它们的 bottom 引用的是落脚面变量）—— 这正是把这套数抽出来的收益。 */
+@media (min-aspect-ratio: 5/4) and (max-height: 720px) {
+  .home-scene {
+    --hs-floor: 24%;
+    --hs-deck: 46%;
+    --line-shelf: 71%;
+    --h-shelf: 6%;
+    --sp-window-w: 14%;
+    --sp-jars-w: 9%;
+  }
+  .home-scene .sp-jars-a { bottom: 57%; }
+}
+
+/* ── 系统开了「减弱动态效果」：这一整幕就静静地待着 ──────────────────────
+   猫那边的处理在引擎里（组件挂了 setPlaying(false)），这里管场景这一半。 */
+@media (prefers-reduced-motion: reduce) {
+  .home-scene .scene-sign-sway,
+  .home-scene .sp-lamp,
+  .home-scene .sp-leaf,
+  .home-scene .sp-steam,
+  .home-scene .tt-disc,
+  .home-scene .tt-note {
+    animation: none;
+  }
+}

@@ -14,6 +14,7 @@
 
 | 模块 | 路由 | 说明 |
 | --- | --- | --- |
+| 首页 | `/` | **整个首页就是一间猫咖**，占满导航栏以下整屏。四只猫按各自的性子待在**四个不同的高度**上（猫架 / 吧台 / 高脚凳 / 坐垫），动效由迪士尼准则驱动且完全确定；入口是从屋顶垂下来的两块**吊牌**，点牌子进对应页面 |
 | 曲谱库 | `/songs` | 按标题 / 艺术家 / 标签本地实时搜索；歌曲清单由 `songs/` 目录在构建时自动索引，加歌不用改任何注册代码 |
 | 曲谱详情 | `/song/:id` | alphaTab 渲染 **TAB 四线谱** + 播放控制条（播放 / 暂停 / 静音 / 变速 / 节拍高亮）。不使用原曲音频，音源就是谱面本身 |
 | 调音器 | `/tools/tuner` | 麦克风实时音高检测（Web Audio 自相关），**手动选弦 / 自动识别**双模式互斥，音分刻度盘 + 琴头选弦，已校准的弦逐弦保持绿点 |
@@ -74,17 +75,19 @@ songs/                    曲谱数据 —— 一首歌一个文件夹
 src/
   config/site.config.ts ★ 站点全部可调项（外观 / 播放 / 入口 / 和弦 / 尤克里里 / 调音器）
   pages/                  7 个页面
-  components/             组件（chords / tuner / uke / icons 等分子目录）
+  components/             组件（chords / tuner / uke / icons / scene / cats 等分子目录）
+    scene/                首页那一幕场景：HomeScene 组装层 + 吊牌 / 唱片机 / 道具
   hooks/                  播放器与音频接线（useSynthFx / useTuner / useChordPlayer / useUkulelePlayer / useUkuleleRecording）
   lib/                    与页面无关的纯逻辑（synthFx / pitch / chord / ukulele / ukeKeys / songTex / catMotion）
   data/                   小猫骨架**元数据**（cats.ts，生成物）+ 手写的几何投递层（catArt.ts）
   assets/cats/*.svg       小猫骨架**几何**（生成物，一个姿态一个文件，可读可 diff）
+    ★ 首页场景里猫的站位不在这里，在 `styles/globals.css` 的 `.home-scene .cat[data-pose]`
   store/                  Zustand：themeStore / playerStore
   songs/index.ts          构建时扫描 songs/ 生成歌曲索引
 public/
   font/  images/  soundfont/  icons/
 docs/
-  adr/                    12 篇架构决策记录
+  adr/                    14 篇架构决策记录
   images/                 README 截图
   alphatex.md             alphaTex 语法速查
   score-spec.md           简谱 spec 语法（配合 python3 .agents/skills/uke-scoregen/scripts/scoregen.py）
@@ -182,7 +185,7 @@ alphaTab 在谱面未指定音色时默认给 **25 = 钢弦吉他**，而尤克�
 - **[docs/alphatex.md](docs/alphatex.md)** —— alphaTex 语法速查：本站唯一谱面格式，每条都跑过真解析器。
 - **[docs/score-spec.md](docs/score-spec.md)** —— 简谱 spec 语法：从零写一首歌的入口（`python3 .agents/skills/uke-scoregen/scripts/scoregen.py`）。
 - **[docs/musicxml-sources.md](docs/musicxml-sources.md)** —— 上哪儿找谱面：来源分级、版权规则、20 份真实谱面实测。
-- **[docs/adr/](docs/adr/)** —— 12 篇架构决策记录：
+- **[docs/adr/](docs/adr/)** —— 14 篇架构决策记录：
 
   | ADR | 主题 |
   | --- | --- |
@@ -198,6 +201,8 @@ alphaTab 在谱面未指定音色时默认给 **25 = 钢弦吉他**，而尤克�
   | [0010](docs/adr/0010-timbre-and-fx-for-all-players.md) | 音色与效果链推广到全站三个播放器 |
   | [0011](docs/adr/0011-home-cat-motion-engine.md) | 首页那排小猫：描摹稿 → 骨架 → 确定性动效引擎 |
   | [0012](docs/adr/0012-motion-art-as-svg-files.md) | 骨架几何外置成 SVG 文件，数据模块只留元数据 |
+  | [0013](docs/adr/0013-home-scene-instead-of-a-row.md) | 首页改成一幕场景，靠「位置」破整齐 |
+  | [0014](docs/adr/0014-home-scene-fullscreen-and-heights.md) | 首页场景占满全屏，并靠「分层落脚面」做出高低 |
 
 开发约定：**先读再改**（本仓库手工调整过的文件不少），改完把代码注释与 `CONTEXT.md` 一起同步。
 

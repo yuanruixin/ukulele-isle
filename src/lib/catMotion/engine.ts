@@ -22,15 +22,23 @@
    画面原点转 —— 脚会飘。
 
    需要的 CSS（DOM 契约）—— 引擎**不注入任何样式**，它只建节点，页面负责看起来对：
-     .cat          每只猫的盒子（pointerenter/leave/click 都挂它身上；row 布局里几只就有几个）
+     .cat          每只猫的盒子（pointerenter/leave/click 都挂它身上；一排几只就有几个）
      .cat .pose    一个姿态的画面，**只有一个带 .on**（引擎切的是 .pose 上的 .on）
      .cat svg      撑满盒子；宽高由页面定（按高布局用 height:100%;width:auto）
      .fx .shadow / .fx .dust / .fx .poof   点缀的填色/描边（--fx / --fx2 由引擎写在 .fx 上，
                    透明度每帧由引擎写行内 style ⇒ CSS 里给个 opacity:0 的初值免得第一帧闪）
    站点侧的这一套见 src/styles/globals.css 的 `.cat-motion`。
 
+   三种布局各需要什么：
+     row     容器做成 flex（.cat 当 flex item 等分宽度）—— 站位由 flex 决定，整齐。
+     single  容器随便；只有一个 .cat。
+     scene   ★ 容器 position:relative，.cat 需要 position:absolute + translateX(-50%)（居中）。
+             引擎给每个 .cat 写了行内 left / bottom / height（全是百分比），
+             并把 data-layout="scene" 标在容器上 —— 页面据此认领这套定位规则。
+
    用法：
      const h = createCatMotion(hostEl, { layout: 'row', poses: ['listen','sing'] })
+     const s = createCatMotion(hostEl, { layout: 'scene', slots: [{pose:'sing',x:32,h:52}] })
      h.setTheme('dark'); h.destroy();
    ========================================================================== */
 import { CATS } from "../../data/cats";
@@ -125,12 +133,42 @@ interface BodyAcc {
   swapped?: boolean;
 }
 
+/**
+ * scene 布局里一只猫的站位。
+ *
+ * ★ 三个量**全部是"容器尺寸的百分比"**（不是 px）。而且**都是可选的**：
+ *   不写 = 引擎不碰这个属性，位置交给页面的 CSS —— 这通常是更好的一手，
+ *   因为 PC / 移动两套构图用媒体查询写最省事，改位置也不用等编译。
+ *   写了 = 引擎把值写进行内 style（行内优先级最高，会盖掉页面 CSS）。
+ *
+ *   ⇒ 一句话：**要 CSS 管就别填，要 TS 管才填**。两者别混着来。
+ */
+export interface SceneSlot {
+  /** 姿态 id */
+  pose: string;
+  /** 水平中心（容器宽度的 %）—— 靠它做**不等距**的聚散 */
+  x?: number;
+  /** 底边基线（离容器底部的 %）—— 靠它做**前后排**的高低错落 */
+  y?: number;
+  /** 高度（容器高度的 %）—— 靠它做**纵深**：前排大、后排小 */
+  h?: number;
+  /** 层叠顺序，不给就按数组顺序（越靠后越在上层） */
+  z?: number;
+}
+
 export interface CatMotionOpts {
   /**
-   * 'row'：每个姿态一个独立实例，横排（首页那排猫）
+   * 'row'：每个姿态一个独立实例，横排（**flex 等分父容器宽** ⇒ 同宽、等距、同一底线）
    * 'single'：一个实例里装下全部姿态，靠 morph 换（预览页的舞台）
+   * 'scene'：**场景布局** —— 每只猫的位置与尺寸由 `slots` 逐只给（见 SceneSlot）。
+   *   与 row 的关系：row 把"站位"交给 flex 等分（整齐），scene 把它交回给调用方（有聚散）。
    */
-  layout?: "row" | "single";
+  layout?: "row" | "single" | "scene";
+  /**
+   * scene 布局的占位表。与 `layout:'scene'` 配套；不给（或空数组）会退回 row 的等分行为，
+   * 不会报错 —— 「配置漏了」在这里的表现是"变整齐"，不是白屏。
+   */
+  slots?: SceneSlot[];
   /** 要哪几只（顺序即排列顺序） */
   poses?: string[];
   /**
@@ -173,7 +211,16 @@ export interface CatMotionHandle {
   destroy: () => void;
 }
 
-export type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };
+/** 递归可选：`config` 允许只写想改的那几项（深合并，见 mergeConfig）。
+ *  ⚠️ 必须写成**分配式**条件类型（`T extends …`，T 是裸类型参数）。
+ *  若写成 `T[K] extends object ? …`，那么 `Record<string, X | undefined>`
+ *  这种"带 undefined 的索引签名"会被判成"不是对象"⇒ 不再往下 Partial，
+ *  于是站点为了改一个 gain 也得把 sink / up 一起抄一遍才过类型检查。 */
+export type DeepPartial<T> = T extends readonly unknown[]
+  ? T
+  : T extends object
+    ? { [K in keyof T]?: DeepPartial<T[K]> }
+    : T;
 
 /* ═══════════════════════════ ★★★ 调参区 ★★★ ═══════════════════════════
    ★ = 最常调的。站点级开关（首页要不要、几只、多大）在 src/config/site.config.ts
@@ -193,11 +240,13 @@ export const CAT_CONFIG = {
     sleep: { period: 4.4, ampY: 0.020 },
     curl: { period: 3.8, ampY: 0.023 },
   } as Record<string, { period: number; ampY: number }>,
-  // ★ 踩拍（只在跟拍的两只身上）：sink 下压 / rise 回弹 / up 上浮位移（×身体高）
+  // ★ 踩拍（只在跟拍的两只身上）：`gain` 是**总闸** —— 同时缩放 sink（拍点下压的挤压）
+  //   与 up（拍后回弹的上浮位移，×身体高）。回弹已经含在 beatCurve 的曲线里，
+  //   所以**没有**单独的"回弹幅度"旋钮：要调幅度只改 gain，节奏由 bpm 定。
   beat: {
-    listen: { gain: 0.55, sink: 0.050, rise: 0.034, up: 0.050 },
-    sing: { gain: 1.00, sink: 0.078, rise: 0.048, up: 0.080 },
-  } as Record<string, { gain: number; sink: number; rise: number; up: number } | undefined>,
+    listen: { gain: 0.55, sink: 0.050, up: 0.050 },
+    sing: { gain: 1.00, sink: 0.078, up: 0.080 },
+  } as Record<string, { gain: number; sink: number; up: number } | undefined>,
   // ★ 睡觉猫的不定时抽动（发生时刻由稳定哈希决定，可重复）
   twitch: { minGap: 2.4, maxGap: 4.2, jolt: 0.022, rot: 0.9 },
 
@@ -349,9 +398,14 @@ export function createCatMotion(host: HTMLElement, opts: CatMotionOpts = {}): Ca
   const layout = opts.layout ?? "row";
   const frame = opts.frame ?? (layout === "single" ? "stage" : "thumb");
   const poses = opts.poses ?? CATS.order;
+  /* scene 布局的站位表：只有它非空时才真的按 scene 摆，否则下面会退回 row 的等分 */
+  const slots = layout === "scene" ? (opts.slots ?? []) : [];
   const art = opts.art ?? defaultArt;
   const interactive = opts.interactive ?? true;
   cfg.theme = opts.theme ?? cfg.theme;
+  /* 把布局方式**标在容器上**（只标事实，样式仍由页面负责）——
+     页面靠它认识别 scene 那套定位规则，引擎一行 CSS 都不注入 */
+  host.dataset.layout = layout;
   const VIEWBOX = frame === "stage" ? CATS.vbStage : CATS.vbThumb;
   /* viewBox 拆成数字：宽高要写回 svg 的 width/height 属性（见 buildPose 的说明） */
   const [, , VBW, VBH] = VIEWBOX.split(/\s+/).map(Number);
@@ -982,7 +1036,26 @@ export function createCatMotion(host: HTMLElement, opts: CatMotionOpts = {}): Ca
   /* ═════════ 组装 DOM ═════════
      每只猫的盒子 = 命中区（指针事件挂在它身上）。`data-clickable` 是给页面 CSS 用的：
      能点的时候给个手型光标 —— 不然没人会知道这几只猫可以点（引擎不注入样式）。 */
-  if (layout === "single") {
+  if (layout === "scene") {
+    /* ★ 场景布局：逐只建盒子。位置/尺寸**默认一个都不写** —— 留给页面 CSS
+       （占位表给个 pose 就够），只有 slots 里显式给了值的那几项才写进行内 style。
+       行内优先级最高，等于把那几个量的控制权从 CSS 收回给 TS：两者别混着用。 */
+    const list: SceneSlot[] = slots.length ? slots : poses.map((pose) => ({ pose }));
+    for (const s of list) {
+      const el = document.createElement("div");
+      el.className = "cat";
+      el.dataset.pose = s.pose;
+      if (interactive) el.dataset.clickable = "";
+      if (s.x != null) el.style.left = `${s.x}%`;
+      if (s.y != null) el.style.bottom = `${s.y}%`;
+      if (s.h != null) el.style.height = `${s.h}%`;
+      if (s.z != null) el.style.zIndex = String(s.z);
+      host.appendChild(el);
+      const inst = makeInstance(el, s.pose, [s.pose], false);
+      instances.push(inst);
+      bind(inst);
+    }
+  } else if (layout === "single") {
     const el = document.createElement("div");
     el.className = "cat";
     el.dataset.pose = poses[0];

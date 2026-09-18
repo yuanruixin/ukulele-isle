@@ -1,7 +1,13 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import type { CatPoseId } from "../../data/cats";
 import { siteConfig } from "../../config/site.config";
-import { createCatMotion, type CatMotionHandle } from "../../lib/catMotion/engine";
+import {
+  createCatMotion,
+  type CatMotionHandle,
+  type DeepPartial,
+  type CatConfig,
+  type SceneSlot,
+} from "../../lib/catMotion/engine";
 import { useThemeStore } from "../../store/themeStore";
 
 /**
@@ -26,21 +32,38 @@ import { useThemeStore } from "../../store/themeStore";
 export interface CatMotionProps {
   /** 摆哪几只、从左到右（默认取 siteConfig.cats.poses） */
   poses?: readonly CatPoseId[];
-  /** 高度（px，桌面端）；默认取 siteConfig.cats.height */
+  /**
+   * 布局（默认 'row' = 横排等分）。
+   *   - 'row'   老样子：flex 等分父容器宽 ⇒ 同宽、等距、齐平（适合"一排装饰"）
+   *   - 'scene' 场景布局：位置与尺寸**交给调用方的 CSS**（见 globals.css 里 .home-scene 一段），
+   *             引擎只建盒子并标 data-layout="scene"。破「整齐」就靠它。
+   */
+  layout?: "row" | "scene";
+  /** scene 布局的占位表；给个 pose 就够（位置留给 CSS）。不传 = 按 poses 逐只建 */
+  slots?: SceneSlot[];
+  /**
+   * 高度（px，桌面端）；默认取 siteConfig.cats.height。
+   * ⚠️ **row 布局才用**：scene 布局的高度由 CSS 百分比给，这里传了也不会生效。
+   */
   height?: number;
-  /** 窄屏（<640px）高度（px）；默认取 siteConfig.cats.heightMobile */
+  /** 窄屏（<640px）高度（px）；默认取 siteConfig.cats.heightMobile。同上，仅 row 用 */
   heightMobile?: number;
   /** 是否响应指针（悬停 / 点击）；默认取 siteConfig.cats.interactive */
   interactive?: boolean;
+  /** 覆盖任意动作参数（scene 布局常用来把跳跃行程收小，免得跳出布置好的位置） */
+  config?: DeepPartial<CatConfig>;
   /** 额外类名（间距之类由调用方给） */
   className?: string;
 }
 
 export default function CatMotion({
   poses = siteConfig.cats.poses,
+  layout = "row",
+  slots,
   height = siteConfig.cats.height,
   heightMobile = siteConfig.cats.heightMobile,
   interactive = siteConfig.cats.interactive,
+  config,
   className,
 }: CatMotionProps) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -48,6 +71,11 @@ export default function CatMotion({
   const mode = useThemeStore((s) => s.mode);
   /* 数组字面量每次渲染都是新引用 ⇒ 拿字符串当依赖，免得每次渲染重建一遍引擎 */
   const posesKey = poses.join(",");
+  /* 占位表同理（它通常还是写在本文件外的字面量）；序列化一次当依赖 */
+  const slotsKey = slots ? JSON.stringify(slots) : "";
+  /* scene 布局的高度由 CSS 百分比给（见 globals.css 的 .home-scene 一段），
+     这时候再把 --cat-h 写进去只会误导后来人 ⇒ 不写 */
+  const isScene = layout === "scene";
 
   useEffect(() => {
     const host = hostRef.current;
@@ -58,13 +86,14 @@ export default function CatMotion({
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const handle = createCatMotion(host, {
-      layout: "row",
+      layout,
       frame: "thumb",
       poses: posesKey.split(","),
+      slots,
       interactive: interactive && !still,
-      /* 站点只管这一个工艺参数（站点配置写的是「这排猫按几拍走」）；
-         其余动作参数留在引擎里 */
-      config: { bpm: siteConfig.cats.bpm },
+      /* 站点只管 bpm 这一个工艺参数（站点配置写的是「这几只按几拍走」）；
+         其余动作参数留在引擎里，调用方要覆盖就通过 config 传 */
+      config: { bpm: siteConfig.cats.bpm, ...config },
       theme: useThemeStore.getState().mode,
     });
     if (still) handle.setPlaying(false);
@@ -76,7 +105,7 @@ export default function CatMotion({
       handle.destroy();
     };
     // still 是「环境常量」，不进依赖：运行中改变系统偏好本来也不需要重建
-  }, [posesKey, interactive]);
+  }, [posesKey, interactive, layout, slotsKey]);
 
   /* 换外观：引擎只改色层 fill + 点缀色，几何不动 */
   useEffect(() => {
@@ -86,13 +115,20 @@ export default function CatMotion({
   return (
     <div
       ref={hostRef}
-      /* w-fit + mx-auto：一排猫整体居中，且只占自己需要的宽度（不会把四只拉开） */
-      className={`cat-motion flex w-fit mx-auto items-end select-none ${className ?? ""}`}
+      /* row：w-fit + mx-auto —— 一排猫整体居中，只占自己需要的宽度（不会把四只拉开）
+         scene：铺满场景容器，具体站位由 CSS 的 .home-scene 一段决定。
+                这里必须 pointer-events-none（否则这层会盖住吊牌的点击），
+                再由 CSS 把 .cat 单独开回 auto —— 只有猫身上是可点的。 */
+      className={`cat-motion select-none ${
+        isScene ? "pointer-events-none absolute inset-0" : "flex w-fit mx-auto items-end"
+      } ${className ?? ""}`}
       style={
-        {
-          "--cat-h": `${height}px`,
-          "--cat-h-sm": `${heightMobile}px`,
-        } as CSSProperties
+        isScene
+          ? undefined
+          : ({
+              "--cat-h": `${height}px`,
+              "--cat-h-sm": `${heightMobile}px`,
+            } as CSSProperties)
       }
       /* 纯装饰：点到只会跳一下，没有任何信息或功能是别处拿不到的 */
       aria-hidden="true"

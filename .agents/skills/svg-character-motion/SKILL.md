@@ -60,7 +60,8 @@ $PY <bitmap-to-svg-replica>/scripts/build-motion-data.py --rig rig.json --traced
 
 ```js
 const h = createMotion(hostEl, {
-  layout: 'row',            // 'row'：一个姿态一个实例横排；'single'：一个实例装下全部、靠 morph 换
+  layout: 'row',            // 'row' 横排等分；'single' 一个实例装下全部、靠 morph 换；
+                            // 'scene' 引擎只管动、位置整个交给 CSS（每只可各自落在不同高度线上）
   poses: ['idle','wave'],   // 要哪几个姿态、顺序即排列顺序
   frame: 'thumb',           // 'stage' 有跳跃用的头顶余量；'thumb' 更矮
   interactive: true,        // 悬停/点击；false = 纯装饰（缩略图就该是 false）
@@ -89,6 +90,21 @@ h.refresh(); h.destroy();
 归一化之后所有角色身体高相同，给一个高度它们就是齐的；等分 + `min-width:0` 保证窄屏不横溢出，
 被压缩时每个盒子压得一样多 ⇒ **脚下的地面线始终齐平**（影子、扬尘都在这条线上）。
 只想占自然宽度就换成 `flex:0 1 auto` + 外层 `w-fit mx-auto`。
+
+⚠️ ★★ **上面那个"地面线齐平"只在"框底 = 脚底"时成立，而取景框通常留边 —— 且每个姿态留的不一样。**
+实测一套四姿态角色（留边占框高比例）：站姿 A `0.236` / 站姿 B `0.227` / 趴姿 `0.236` / **睡姿 `0.023`**。
+含义：齐的是**框底**，不是**脚底**。睡姿几乎不留边，所以它**看着一直是对的**，
+别的几个会整体浮在半空 —— 而且**不报任何错**。
+⇒ 要把角色放到某条线上时必须写
+`bottom: calc(<落脚面> − <高度> × <该姿态的留边>)`；**换图纸、换 frame 都要重新量**。
+量法：`svg .norm`（你那套骨架的根组）的**静态 bbox × transform**，除以框高 —— 别拿盒子中心估。
+
+⚠️ ★★ **`calc` 里 `% × %` 是非法值，会静默失效。**
+`calc(13% * 23.6%)` 不会报错，而是让**整条属性回落 `auto`** —— 表现是"整排角色突然一起飞走"，
+控制台一声不响。⇒ 这类比例**一律写成无单位数**（`0.236`，不是 `23.6%`）。
+★ 由此得到一条通用验收纪律：**凡是 `calc` 出来的几何量，必须用脚本量回屏幕坐标系核对，
+别只看截图**。上面那套"浮在半空"我一度当成构图问题，实际是**符号写反 + `% × %` 非法**
+两个静默失效叠在一起。
 
 ## 引擎的七条工程约定
 
@@ -272,6 +288,12 @@ review 里的跳跃 `travel = 0`、归位点归 0 ⇒ 逐帧比对时只有竖�
 只是多出一段空白（各角色的落地基线仍然对齐）。
 舞台侧则可以用 `overflow:visible` 放开（再让外层卡片裁圆角）。
 
+⚠️ ★★ **但别把这句话推及"下方"**：底部同样留白，而且**每个姿态留的量不一样**
+（同一套图纸实测 `0.023 ~ 0.236`，睡姿几乎不留边）。所以
+**"落地基线对齐"只在同一姿态之间成立；跨姿态摆放时基线是不齐的** ——
+要落到某条线上得按各自留边补偿。详见前面「落地成模块」那节的取景框一段。
+**永远别默认"框底 = 脚底"。**
+
 ### 8. ★ 主题换色不能拿 `svg.children` 当色层 —— 会**静默失效**
 
 归一化之后骨架 SVG 的根是 `<g class="norm" transform="…">`（原始坐标 → 舞台坐标），
@@ -345,6 +367,38 @@ st.dispatchEvent(new MouseEvent('click', {clientX: cx, clientY: cy, bubbles: tru
 9. **系统「减弱动态效果」**：重新加载后连续采 90 帧，`transform` 只有 **1 个**不同值
    （真的静止），且点击没反应；
 10. 「开关关掉就完全不出现」也试一次（站点配置里那个开关置 false）。
+11. ★ **算出来的几何量，量回屏幕坐标系**：凡是位置由 `calc` 推出的（落脚、居中、留边补偿），
+    用脚本量「实际矩形 − 目标线」，误差应 **< 0.05%** —— **别只看截图**。
+
+    ```js
+    const host = document.querySelector('.host').getBoundingClientRect();
+    const foot = document.querySelector('.cat .pose.on svg .norm').getBoundingClientRect();
+    (host.bottom - foot.bottom) / host.height;   // 再与目标留边相减
+    ```
+
+    这条实测抓到过两个静默错误（符号写反、`% × %` 非法），截图当时看不出问题。
+12. **满屏布局不能有滚动条**：`document.documentElement.scrollHeight === clientHeight`。
+    ⚠️ 拿导航栏高度去减 `100dvh` 时注意 `border-bottom: 0.5px` —— 它在多数 DPR 下**实占 1px**，
+    差这 1px 就冒滚动条。改用 `box-shadow: inset 0 -0.5px 0` 画那条分隔线
+    （阴影不参与布局），**别用 JS 去量导航栏**。
+13. **调"幅度"类参数时量「屏幕矩形的极差」，别靠截图** —— 静态图看不出幅度。
+    页内 rAF 采 2~3 秒，记目标元素 `getBoundingClientRect()` 的 `top` / `height` 极差，前后对比：
+
+    ```js
+    // 起采（返回后等 3s 再读 window.__amp 即可）
+    (() => { const el = document.querySelector('<目标>'); const a = {t0:1e9,t1:-1e9,h0:1e9,h1:-1e9};
+      const T0 = performance.now();
+      (function s(){ const r = el.getBoundingClientRect();
+        a.t0=Math.min(a.t0,r.top); a.t1=Math.max(a.t1,r.top);
+        a.h0=Math.min(a.h0,r.height); a.h1=Math.max(a.h1,r.height);
+        performance.now()-T0 < 3000 ? requestAnimationFrame(s)
+          : (window.__amp = {dTop:+(a.t1-a.t0).toFixed(2), dH:+(a.h1-a.h0).toFixed(2)}); })();
+      return 'sampling…'; })()
+    ```
+
+    ⚠️ **别期望实测降幅 = 参数降幅**：幅度通常是**多项叠加**。
+    实测把「踩拍 gain」降 36%，总行程只降 17% —— 因为里面还有一层"呼吸"没动。
+    ⇒ 先算清各层占比，再决定动哪一个（或一起动）。
 
 ⚠️ 页面内 rAF 采样器记得**清空**或提高上限：写死上限时，标记位在封顶后不再增长，
 `slice(a,b)` 会拿到空数组 —— 症状是「采样 0 帧」，看起来像动作没发生。
@@ -383,6 +437,23 @@ const sig = [...document.querySelectorAll('.host .pose svg')].map(svg => [
 落地到页面时再包一层：引擎（纯模块，**不认识框架、不注入样式**）+ 组件（挂载 / 换主题 / 销毁）
 + 站点配置块（要不要、摆哪几个、多大、几拍、能不能点）。**工艺参数留在引擎里，站点配置只放开关**
 —— 两边不互相搬参数，用户才找得到旋钮。三层各自的职责边界见上面「落地成模块」。
+
+★ 但"不互相搬"≠"站点不能改"——**基准值留在引擎，站点可以*覆盖*单点**：
+
+```js
+createMotion(el, { config: { jump: { drift: 0.16 }, beat: { sing: { gain: 0.6 } } } });
+```
+
+- 覆盖走**深合并**，只写要改的那个键就行 —— 前提是递归 Partial 的类型写得对。
+  ⚠️ **`Record<string, X | undefined>` 形状的配置项会让「非分配式」`DeepPartial` 停止递归**：
+  `X | undefined extends object` 为 false ⇒ 那一层不再 Partial ⇒ 只写一个键就**编译报错**。
+  解法：写成**分配式**（裸类型参数 T）——
+  `T extends readonly unknown[] ? T : T extends object ? { [K in keyof T]?: DeepPartial<T[K]> } : T`。
+  **以后往配置里加"索引签名 + undefined"形状的项时，记得这一条。**
+- ★ 为什么需要覆盖：**同一个幅度在不同构图下合适值不同**。挤在一起的一排角色，幅度小也看得见；
+  摊在大留白的场景里，同样幅度会显得很晃 ⇒ 这类差异属**页面偏好**，写在覆盖里。
+- ⚠️ **写覆盖前先确认那个键真的被读过**。实测踩过 `beat.rise`：注释、类型、默认值一应俱全，
+  **就是引擎里没人读它** —— 调它**静默无效**。见到这种"死字段"当场删掉，别留着当陷阱。
 
 ⚠️ 骨架进首屏是要花钱的：实测四个姿态的骨架 SVG 共约 105 KB，以 `?raw` 同步引入就是
 整块进主 chunk（模块数从 3.7 KB 涨到 ~127 KB gzip 就是这么来的）。

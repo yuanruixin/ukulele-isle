@@ -14,6 +14,7 @@ A **fully static, backend-free** ukulele learning site — reading scores, heari
 
 | Module | Route | Description |
 | --- | --- | --- |
+| Home | `/` | **The whole home page is one cat café**, filling every pixel below the navbar. Four cats live at **four different heights** (wall shelf / counter / bar stool / floor cushion); the motion is deterministic and driven by the Disney principles. The menu is a pair of **hanging signs** — click one to enter that page |
 | Song library | `/songs` | Instant local filtering by title / artist / tag. The catalogue is generated at build time by scanning the `songs/` directory — adding a song touches no registry code |
 | Song detail | `/song/:id` | alphaTab renders the **4-line TAB staff** with a player bar (play / pause / mute / speed / beat highlight). No original recordings are used: the score itself is the sound source |
 | Tuner | `/tools/tuner` | Real-time pitch detection from the microphone (Web Audio autocorrelation). **Manual pick-a-string and auto-detect** are mutually exclusive modes; a cents dial plus a headstock string picker, with each tuned string holding its green dot |
@@ -74,17 +75,19 @@ songs/                    Score data — one folder per song
 src/
   config/site.config.ts ★ every site-level knob (appearance / playback / nav / chords / ukulele / tuner)
   pages/                  7 pages
-  components/             UI parts (chords / tuner / uke / icons subfolders)
+  components/             UI parts (chords / tuner / uke / icons / scene / cats subfolders)
+    scene/                the home-page tableaux: HomeScene assembler + hanging signs / turntable / props
   hooks/                  players and audio wiring (useSynthFx / useTuner / useChordPlayer / useUkulelePlayer / useUkuleleRecording)
   lib/                    page-agnostic logic (synthFx / pitch / chord / ukulele / ukeKeys / songTex / catMotion)
   data/                   cat skeleton **metadata** (cats.ts, generated) + hand-written geometry delivery (catArt.ts)
   assets/cats/*.svg       cat skeleton **geometry** (generated, one file per pose, readable and diffable)
+    ★ where the cats *stand* inside the scene is not here — it lives in `styles/globals.css` under `.home-scene .cat[data-pose]`
   store/                  Zustand: themeStore / playerStore
   songs/index.ts          scans songs/ at build time to build the catalogue
 public/
   font/  images/  soundfont/  icons/
 docs/
-  adr/                    12 architecture decision records
+  adr/                    14 architecture decision records
   images/                 README screenshots
   alphatex.md             alphaTex cheat-sheet
   score-spec.md           numbered-notation spec (used by python3 .agents/skills/uke-scoregen/scripts/scoregen.py)
@@ -184,7 +187,7 @@ When a score doesn't name an instrument, alphaTab defaults to **25 = steel-strin
 - **[docs/alphatex.md](docs/alphatex.md)** — the alphaTex cheat-sheet: the only score format here, every rule tested against the real parser.
 - **[docs/score-spec.md](docs/score-spec.md)** — the numbered-notation spec: how to write a song from scratch (`python3 .agents/skills/uke-scoregen/scripts/scoregen.py`).
 - **[docs/musicxml-sources.md](docs/musicxml-sources.md)** — where to find scores: source tiers, licensing, 20 real files tested.
-- **[docs/adr/](docs/adr/)** — 12 architecture decision records:
+- **[docs/adr/](docs/adr/)** — 13 architecture decision records:
 
   | ADR | Subject |
   | --- | --- |
@@ -200,6 +203,8 @@ When a score doesn't name an instrument, alphaTab defaults to **25 = steel-strin
   | [0010](docs/adr/0010-timbre-and-fx-for-all-players.md) | Extending timbre and FX to all three players |
   | [0011](docs/adr/0011-home-cat-motion-engine.md) | The home-page cats: traced art → skeleton → deterministic motion engine |
   | [0012](docs/adr/0012-motion-art-as-svg-files.md) | Skeleton geometry moves out into SVG files; the data module keeps metadata only |
+  | [0013](docs/adr/0013-home-scene-instead-of-a-row.md) | The home page becomes a tableaux — breaking the grid with *placement* |
+  | [0014](docs/adr/0014-home-scene-fullscreen-and-heights.md) | The home scene goes full-screen — and gains *height* through layered landing lines |
 
 Working convention: **read before you edit** — several files in this repo have been hand-tuned — and keep code comments and `CONTEXT.md` in sync with your change.
 
