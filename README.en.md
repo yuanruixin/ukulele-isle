@@ -4,6 +4,8 @@
 
 A **fully static, backend-free** ukulele learning site — reading scores, hearing them, practising, and tuning, all in one place. Built with React 18 + Vite 7 + TypeScript + Tailwind v4; the build output drops onto any static host as-is.
 
+**Live: <https://ukulele-isle.vercel.app/>**
+
 [中文](README.md) · [Glossary](CONTEXT.md) · [Architecture Decision Records](docs/adr/)
 
 ![Home](docs/images/home.png)
@@ -52,7 +54,7 @@ pnpm preview        # preview the built dist/ locally
 pnpm analyze        # bundle analysis → dist/stats.html (not produced by a normal build)
 ```
 
-Deployment: `dist/` is plain static output — host it anywhere. Routing uses a **HashRouter** (`/#/songs`), so you need **no server-side rewrite rules** and there is no 404 page to configure.
+Deployment: `dist/` is plain static output — host it anywhere. The live build runs on Vercel: <https://ukulele-isle.vercel.app/>. Routing uses a **HashRouter** (`/#/songs`), so you need **no server-side rewrite rules** and there is no 404 page to configure.
 
 ## Tech stack
 

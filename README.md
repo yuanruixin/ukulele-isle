@@ -4,6 +4,8 @@
 
 一个**纯静态、无后端**的尤克里里学习站点：看谱、听声、跟练、校音四件事收在同一个网站里完成。React 18 + Vite 7 + TypeScript + Tailwind v4，构建产物丢到任意静态托管即可。
 
+**在线访问：<https://ukulele-isle.vercel.app/>**
+
 [English](README.en.md) · [项目术语表](CONTEXT.md) · [架构决策记录](docs/adr/)
 
 ![首页](docs/images/home.png)
@@ -52,7 +54,7 @@ pnpm preview        # 本地预览 dist/ 产物
 pnpm analyze        # 依赖体积分析 → dist/stats.html（日常 build 不会生成）
 ```
 
-部署：`dist/` 是纯静态产物，直接托管即可。路由用 **HashRouter**（形如 `/#/songs`），所以**不需要任何服务端 rewrite 规则**，也没有 404 页。
+部署：`dist/` 是纯静态产物，直接托管即可 —— 线上版本跑在 Vercel：<https://ukulele-isle.vercel.app/>。路由用 **HashRouter**（形如 `/#/songs`），所以**不需要任何服务端 rewrite 规则**，也没有 404 页。
 
 ## 技术栈
 
